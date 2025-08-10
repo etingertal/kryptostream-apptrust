@@ -86,7 +86,7 @@ jobs:
         cd quoteofday
         
         # Test if we can access the repository
-        jf rt search --url ${{ vars.JF_URL }}/artifactory/commons-dev-maven-virtual --limit 5
+        jf rt search "commons-dev-maven-virtual/*" --limit 5
         echo "✅ Maven repository access successful"
 
     - name: Test Maven Build with JFrog
@@ -174,7 +174,7 @@ jobs:
     - name: Test Repository List
       run: |
         echo "📋 Testing repository listing..."
-        jf rt repo-list --server-id setup-jfrog-cli-server
+        jf rt curl -XGET "/api/repositories" --server-id setup-jfrog-cli-server
         echo "✅ Repository listing successful"
 
   test-configuration-validation:

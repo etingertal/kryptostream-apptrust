@@ -139,7 +139,7 @@ test_repository_access() {
     print_status "Testing repository access..."
     
     # Test Maven repository access
-    jf rt search --url "$JF_URL/artifactory/commons-dev-maven-virtual" --limit 5 || {
+    jf rt search "commons-dev-maven-virtual/*" --limit 5 || {
         print_warning "Maven repository access test failed (this might be expected)"
         return 0
     }
