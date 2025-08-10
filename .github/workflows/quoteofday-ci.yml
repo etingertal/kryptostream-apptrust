@@ -101,7 +101,6 @@ jobs:
           --build-arg ARTIFACTORY_USERNAME=${{ vars.JF_USER }} \
           --build-arg ARTIFACTORY_PASSWORD=${{ secrets.JF_ACCESS_TOKEN }} \
           -t ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} \
-          -t ${{ env.DOCKER_REGISTRY }}/quoteofday:latest \
           --push .
         
     - name: Test Docker image
@@ -120,5 +119,4 @@ jobs:
       run: |
         echo "✅ Successfully pushed Docker images to JFrog Artifactory:"
         echo "   - ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }}"
-        echo "   - ${{ env.DOCKER_REGISTRY }}/quoteofday:latest"
         echo "   - Platforms: linux/amd64, linux/arm64"
