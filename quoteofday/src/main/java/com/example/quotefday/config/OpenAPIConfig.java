@@ -25,8 +25,8 @@ public class OpenAPIConfig {
 
         Contact contact = new Contact();
         contact.setEmail("demo@jfrog.com");
-        contact.setName("JFrog Evidence Demo");
-        contact.setUrl("https://github.com/jfrog/evidence-demo");
+        contact.setName("JFrog Evidence Integration Demo");
+        contact.setUrl("https://github.com/jfrog/evidence-integration");
 
         License mitLicense = new License()
                 .name("Apache License, Version 2.0")
