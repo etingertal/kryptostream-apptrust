@@ -47,7 +47,12 @@ jobs:
         jf c add --url ${{ vars.JF_URL }} --user ${{ vars.JF_USER }} --password ${{ secrets.JF_ACCESS_TOKEN }} --interactive=false
       
     - name: Build and deploy to Artifactory
-      run: cd quoteofday && jf mvn deploy 
+      run: |
+        cd quoteofday
+        # First build with Maven Central for dependencies
+        ./mvnw clean package -DskipTests
+        # Then deploy to JFrog Artifactory
+        jf mvn deploy
 
   docker-build:
     name: Docker Build - Quote of Day
