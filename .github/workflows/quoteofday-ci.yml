@@ -16,13 +16,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup JFrog CLI
-      uses: jfrog/setup-jfrog-cli@v4
-      env:
-        JF_URL: ${{ vars.JF_URL }}
-        JF_USER: ${{ vars.JF_USER }}
-        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-
     - name: Checkout code
       uses: actions/checkout@v4
       
@@ -39,10 +32,22 @@ jobs:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('quoteofday/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
+
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4
+      with:
+        version: latest
+      env:
+        JF_URL: ${{ vars.JF_URL }}
+        JF_USER: ${{ vars.JF_USER }}
+        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+
+    - name: Configure JFrog CLI
+      run: |
+        jf c add --url ${{ vars.JF_URL }} --user ${{ vars.JF_USER }} --password ${{ secrets.JF_ACCESS_TOKEN }} --interactive=false
       
     - name: Build and deploy to Artifactory
       run: cd quoteofday && jf mvn deploy 
-      
 
   docker-build:
     name: Docker Build - Quote of Day
@@ -56,9 +61,11 @@ jobs:
       
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
+      with:
+        version: latest
       env:
         JF_URL: ${{ vars.JF_URL }}
-        JF_USER: ${{ secrets.JF_USER }}
+        JF_USER: ${{ vars.JF_USER }}
         JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
       
     - name: Set up Docker Buildx
@@ -68,7 +75,7 @@ jobs:
       run: |
         echo "🔐 Logging into JFrog Artifactory Docker registry..."
         echo "Registry: ${{ env.DOCKER_REGISTRY }}"
-        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ secrets.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
+        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
         echo "✅ Successfully logged into Docker registry"
         
     - name: Verify Docker registry access

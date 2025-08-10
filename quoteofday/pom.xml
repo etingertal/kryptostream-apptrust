@@ -65,4 +65,31 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo1.maven.org/maven2/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>setup-jfrog-cli-server</id>
+            <name>JFrog Artifactory Release Repository</name>
+            <url>${env.JF_URL}/artifactory/commons-dev-maven-virtual</url>
+        </repository>
+        <snapshotRepository>
+            <id>setup-jfrog-cli-server</id>
+            <name>JFrog Artifactory Snapshot Repository</name>
+            <url>${env.JF_URL}/artifactory/commons-dev-maven-virtual</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project> 
