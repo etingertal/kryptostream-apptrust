@@ -1,0 +1,11 @@
+version: 1
+type: maven
+resolver:
+    serverId: full
+    snapshotRepo: commons-dev-maven-remote
+    releaseRepo: commons-dev-maven-remote
+deployer:
+    serverId: full
+    snapshotRepo: commons-dev-maven-virtual
+    releaseRepo: commons-dev-maven-virtual
+useWrapper: true

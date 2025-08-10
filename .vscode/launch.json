@@ -1,0 +1,107 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Act: Run CI/CD Pipeline (Dry Run)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/run-act.js",
+            "args": [
+                "dryrun",
+                ".github/workflows/ci.yml"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "presentation": {
+                "hidden": false,
+                "group": "Act",
+                "order": 1
+            },
+            "preLaunchTask": null
+        },
+        {
+            "name": "Act: Run CI/CD Pipeline (Live)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/run-act.js",
+            "args": [
+                "live",
+                ".github/workflows/ci.yml"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "presentation": {
+                "hidden": false,
+                "group": "Act",
+                "order": 2
+            },
+            "preLaunchTask": null
+        },
+        {
+            "name": "Act: Run Current Workflow (Dry Run)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/run-act.js",
+            "args": [
+                "dryrun",
+                "${file}"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "presentation": {
+                "hidden": false,
+                "group": "Act",
+                "order": 1
+            }
+        },
+        {
+            "name": "Act: Run Current Workflow (Live)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/run-act.js",
+            "args": [
+                "live",
+                "${file}"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "presentation": {
+                "hidden": false,
+                "group": "Act",
+                "order": 2
+            }
+        },
+        {
+            "name": "Act: Test Environment Variables",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/run-act.js",
+            "args": [
+                "test-env"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "presentation": {
+                "hidden": false,
+                "group": "Act",
+                "order": 3
+            }
+        },
+        {
+            "name": "Act: Test Docker Login",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/run-act.js",
+            "args": [
+                "test-docker"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "presentation": {
+                "hidden": false,
+                "group": "Act",
+                "order": 4
+            }
+        }
+    ]
+}
