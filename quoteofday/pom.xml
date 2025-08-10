@@ -70,7 +70,7 @@
         <repository>
             <id>setup-jfrog-cli-server</id>
             <name>JFrog Artifactory</name>
-            <url>https://evidencetrial.jfrog.io/artifactory/commons-dev-maven-virtual</url>
+            <url>https://evidencetrial.jfrog.io/artifactory/maven-virtual</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -84,12 +84,12 @@
         <repository>
             <id>setup-jfrog-cli-server</id>
             <name>JFrog Artifactory Release Repository</name>
-            <url>https://evidencetrial.jfrog.io/artifactory/commons-dev-maven-virtual</url>
+            <url>https://evidencetrial.jfrog.io/artifactory/maven-virtual</url>
         </repository>
         <snapshotRepository>
             <id>setup-jfrog-cli-server</id>
             <name>JFrog Artifactory Snapshot Repository</name>
-            <url>https://evidencetrial.jfrog.io/artifactory/commons-dev-maven-virtual</url>
+            <url>https://evidencetrial.jfrog.io/artifactory/maven-virtual</url>
         </snapshotRepository>
     </distributionManagement>
 </project> 

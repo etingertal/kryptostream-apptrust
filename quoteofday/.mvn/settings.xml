@@ -18,7 +18,7 @@
                 <repository>
                     <id>setup-jfrog-cli-server</id>
                     <name>JFrog Artifactory</name>
-                    <url>https://evidencetrial.jfrog.io/artifactory/commons-dev-maven-virtual</url>
+                    <url>https://evidencetrial.jfrog.io/artifactory/maven-virtual</url>
                     <releases>
                         <enabled>true</enabled>
                     </releases>
