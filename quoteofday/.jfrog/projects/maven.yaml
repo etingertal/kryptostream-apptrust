@@ -1,11 +1,11 @@
 version: 1
 type: maven
 resolver:
-    serverId: https://evidencetrial.jfrog.io
+    serverId: setup-jfrog-cli-server
     snapshotRepo: commons-dev-maven-virtual
     releaseRepo: commons-dev-maven-virtual
 deployer:
-    serverId: https://evidencetrial.jfrog.io
+    serverId: setup-jfrog-cli-server
     snapshotRepo: commons-dev-maven-virtual
     releaseRepo: commons-dev-maven-virtual
 useWrapper: true
