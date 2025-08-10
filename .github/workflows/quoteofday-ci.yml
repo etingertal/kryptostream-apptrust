@@ -6,6 +6,7 @@ on:
     paths:
       - 'quoteofday/**'
       - '.github/workflows/quoteofday-ci.yml'
+  workflow_dispatch:
 
 env:
   DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
