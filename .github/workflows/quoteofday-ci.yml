@@ -52,7 +52,7 @@ jobs:
     - name: Deploy to Artifactory
       run: |
         cd quoteofday
-        jf mvn deploy
+        jf mvn install
 
   docker-build:
     name: Docker Build - Quote of Day
