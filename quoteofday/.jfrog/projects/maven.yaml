@@ -2,10 +2,10 @@ version: 1
 type: maven
 resolver:
     serverId: setup-jfrog-cli-server
-    snapshotRepo: maven-virtual
-    releaseRepo: maven-virtual
+    snapshotRepo: commons-dev-maven-virtual
+    releaseRepo: commons-dev-maven-virtual
 deployer:
     serverId: setup-jfrog-cli-server
-    snapshotRepo: maven-virtual
-    releaseRepo: maven-virtual
+    snapshotRepo: commons-dev-maven-virtual
+    releaseRepo: commons-dev-maven-virtual
 useWrapper: true

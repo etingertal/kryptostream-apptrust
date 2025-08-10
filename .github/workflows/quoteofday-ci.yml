@@ -53,7 +53,7 @@ jobs:
         ./mvnw clean package -DskipTests
         echo "✅ Build successful with Maven Central"
         # TODO: Fix JFrog authentication for deployment
-        # jf mvn deploy
+        jf mvn deploy
 
   docker-build:
     name: Docker Build - Quote of Day
