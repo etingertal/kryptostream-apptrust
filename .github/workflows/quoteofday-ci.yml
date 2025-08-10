@@ -47,13 +47,13 @@ jobs:
       run: |
         cd quoteofday
         # Build with Maven Central for dependencies
-        ./mvnw clean package -DskipTests
+        ./mvnw clean package -DskipTests -q --batch-mode
         echo "✅ Build successful with Maven Central"
 
     - name: Deploy to Artifactory
       run: |
         cd quoteofday
-        jf mvn install
+        jf mvn install -q --batch-mode --no-transfer-progress
 
   docker-build:
     name: Docker Build - Quote of Day

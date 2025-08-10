@@ -100,7 +100,7 @@ test_maven_integration() {
     }
     
     # Test Maven build with JFrog
-    jf mvn clean compile --no-transfer-progress || {
+    jf mvn clean compile -q --batch-mode --no-transfer-progress || {
         print_error "Maven build with JFrog failed"
         return 1
     }

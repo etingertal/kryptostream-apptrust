@@ -95,7 +95,7 @@ jobs:
         cd quoteofday
         
         # Test Maven build with JFrog
-        jf mvn clean compile --no-transfer-progress
+        jf mvn clean compile -q --batch-mode --no-transfer-progress
         echo "✅ Maven build with JFrog successful"
 
     - name: Test Maven Deploy
@@ -104,7 +104,7 @@ jobs:
         cd quoteofday
         
         # Test deploy (this will fail if auth is wrong, but we can see the error)
-        jf mvn deploy --no-transfer-progress || echo "⚠️ Deploy test completed (may fail due to repository permissions)"
+        jf mvn deploy -q --batch-mode --no-transfer-progress || echo "⚠️ Deploy test completed (may fail due to repository permissions)"
 
   test-docker-integration:
     name: Test Docker Integration
