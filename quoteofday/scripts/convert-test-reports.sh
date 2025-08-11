@@ -154,7 +154,23 @@ for xml_file in $xml_files; do
     tests=$(extract_xml_attr "$xml_file" "tests" "0")
     failures=$(extract_xml_attr "$xml_file" "failures" "0")
     skipped=$(extract_xml_attr "$xml_file" "skipped" "0")
-    time=$(extract_xml_attr "$xml_file" "time" "0")
+    time_raw=$(extract_xml_attr "$xml_file" "time" "0")
+    
+    echo "    Raw values - tests: '$tests', failures: '$failures', skipped: '$skipped', time: '$time_raw'"
+    
+    # Ensure all values are integers
+    tests=${tests%.*}
+    failures=${failures%.*}
+    skipped=${skipped%.*}
+    time=${time_raw%.*}
+    
+    # Handle empty strings
+    if [ -z "$tests" ]; then tests=0; fi
+    if [ -z "$failures" ]; then failures=0; fi
+    if [ -z "$skipped" ]; then skipped=0; fi
+    if [ -z "$time" ]; then time=0; fi
+    
+    echo "    Processed values - tests: $tests, failures: $failures, skipped: $skipped, time: $time"
     
     # Calculate passed tests
     passed=$((tests - failures - skipped))
