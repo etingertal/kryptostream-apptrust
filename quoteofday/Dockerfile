@@ -1,33 +1,22 @@
-# Multi-stage build to create a clean runtime image
-FROM eclipse-temurin:21-jre AS runtime
+# Ultra-minimal Alpine-based runtime image
+FROM eclipse-temurin:21-jre-alpine AS runtime
 
-# Create non-root user and set up environment in one layer
-RUN groupadd -r spring && \
-    useradd -r -g spring spring && \
+# Single layer for all setup operations
+RUN addgroup -g 1001 -S spring && \
+    adduser -u 1001 -S spring -G spring && \
     mkdir -p /app && \
     chown spring:spring /app
 
-# Set working directory
 WORKDIR /app
 
-# Install wget for health check in one layer
-RUN apt-get update && \
-    apt-get install -y wget && \
-    rm -rf /var/lib/apt/lists/*
+# Copy JAR and set ownership in one operation
+COPY --chown=spring:spring target/quote-of-day-service-*.jar app.jar
 
-# Copy the JAR file and set ownership in one layer
-COPY target/quote-of-day-service-*.jar app.jar
-RUN chown spring:spring /app/app.jar
-
-# Switch to non-root user
 USER spring
-
-# Expose port
 EXPOSE 8080
 
-# Health check
+# Simple health check using Java process check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/quotes/health || exit 1
+  CMD java -cp app.jar org.springframework.boot.loader.JarLauncher --help > /dev/null 2>&1 || exit 1
 
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
