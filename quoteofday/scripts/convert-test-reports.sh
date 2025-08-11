@@ -69,19 +69,18 @@ add_floating_point() {
     local a="$1"
     local b="$2"
     
-    # Use awk for reliable floating point arithmetic
-    if command -v awk >/dev/null 2>&1; then
+    # Use bc for reliable floating point arithmetic
+    if command -v bc >/dev/null 2>&1; then
+        echo "scale=3; $a + $b" | bc -l 2>/dev/null || echo "0.000"
+    elif command -v awk >/dev/null 2>&1; then
         echo "$a $b" | awk '{printf "%.3f", $1 + $2}'
-    elif command -v bc >/dev/null 2>&1; then
-        echo "$a + $b" | bc -l 2>/dev/null | head -c 10
     else
-        # Fallback: convert to integers (multiply by 1000, add, divide by 1000)
-        local a_int=$(echo "$a" | sed 's/\.//' | sed 's/^0*//')
-        local b_int=$(echo "$b" | sed 's/\.//' | sed 's/^0*//')
+        # Fallback: simple integer addition (lose precision but avoid errors)
+        local a_int=${a%.*}
+        local b_int=${b%.*}
         if [ -z "$a_int" ]; then a_int=0; fi
         if [ -z "$b_int" ]; then b_int=0; fi
-        local result=$((a_int + b_int))
-        printf "%.3f" "$(echo "scale=3; $result / 1000" | bc -l 2>/dev/null || echo "0")"
+        echo $((a_int + b_int))
     fi
 }
 
