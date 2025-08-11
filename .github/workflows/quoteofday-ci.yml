@@ -59,20 +59,19 @@ jobs:
         cd quoteofday
         echo "📊 Creating test evidence JSON..."
         
-        # Set environment variables for the script
-        export BUILD_NAME="quoteofday"
-        export BUILD_NUMBER="${{ github.run_number }}"
-        export REPOSITORY="${{ github.repository }}"
-        export COMMIT_SHA="${{ github.sha }}"
-        export BRANCH="${{ github.ref_name }}"
-        export TRIGGERED_BY="${{ github.actor }}"
+        # Create evidence directory
+        mkdir -p evidence
         
-        # Run the conversion script
-        ./scripts/convert-test-reports.sh target/surefire-reports test-evidence.json
+        # Run the conversion script to create evidence file
+        ./scripts/convert-test-reports.sh target/surefire-reports evidence/test-evidence.json
+        
+        # Print the file path for evidence creation
+        echo "📄 Test evidence file created at: $(pwd)/evidence/test-evidence.json"
+        echo "📄 Absolute path: ${{ github.workspace }}/quoteofday/evidence/test-evidence.json"
         
         # Display the JSON file
         echo "📄 Test Evidence JSON:"
-        cat test-evidence.json
+        cat evidence/test-evidence.json
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -120,7 +119,7 @@ jobs:
       run: |
         jf evd create --build-name quoteofday --build-number ${{ github.run_number }}  \
             --key "${{ secrets.PRIVATE_KEY }}"  --key-alias CI-RSA-KEY \
-            --predicate test-evidence.json --predicate-type https://jfrog.com/evidence/signature/v1 
+            --predicate quoteofday/evidence/test-evidence.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
     - name: Create release bundle
       run: |

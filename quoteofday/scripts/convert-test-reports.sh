@@ -8,8 +8,6 @@ set -e
 # Default values
 INPUT_DIR="${1:-target/surefire-reports}"
 OUTPUT_FILE="${2:-test-evidence.json}"
-BUILD_NAME="${BUILD_NAME:-quoteofday}"
-BUILD_NUMBER="${BUILD_NUMBER:-local}"
 REPOSITORY="${REPOSITORY:-unknown}"
 COMMIT_SHA="${COMMIT_SHA:-unknown}"
 BRANCH="${BRANCH:-unknown}"
@@ -69,15 +67,6 @@ extract_test_cases() {
 # Initialize JSON structure
 cat > "$OUTPUT_FILE" << EOF
 {
-  "build_info": {
-    "build_name": "$(escape_json "$BUILD_NAME")",
-    "build_number": "$(escape_json "$BUILD_NUMBER")",
-    "repository": "$(escape_json "$REPOSITORY")",
-    "commit_sha": "$(escape_json "$COMMIT_SHA")",
-    "branch": "$(escape_json "$BRANCH")",
-    "triggered_by": "$(escape_json "$TRIGGERED_BY")",
-    "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  },
   "test_summary": {
     "total_tests": 0,
     "passed_tests": 0,
@@ -188,15 +177,6 @@ fi
 # Create final JSON file
 cat > "$OUTPUT_FILE" << EOF
 {
-  "build_info": {
-    "build_name": "$(escape_json "$BUILD_NAME")",
-    "build_number": "$(escape_json "$BUILD_NUMBER")",
-    "repository": "$(escape_json "$REPOSITORY")",
-    "commit_sha": "$(escape_json "$COMMIT_SHA")",
-    "branch": "$(escape_json "$BRANCH")",
-    "triggered_by": "$(escape_json "$TRIGGERED_BY")",
-    "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  },
   "test_summary": {
     "total_tests": $total_tests,
     "passed_tests": $passed_tests,
