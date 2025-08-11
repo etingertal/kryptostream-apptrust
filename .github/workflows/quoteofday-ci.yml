@@ -70,3 +70,35 @@ jobs:
         jf docker buildx build --platform linux/amd64,linux/arm64 \
           -t ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} \
           --push .
+
+    - name: Test Docker image
+      run: |
+        cd quoteofday
+        # Pull the image for testing
+        jf docker pull ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }}
+        
+        # Run container with better debugging
+        jf docker run -d --name test-container -p 8080:8080 ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }}
+        
+        # Wait for container to start
+        sleep 5
+        
+        # Test health endpoint
+        curl -f http://localhost:8080/api/quotes/health || {
+          echo "❌ Health check failed"
+          exit 1
+        } 
+
+    - name: Publish buildinfo
+      run: |
+        jf rt build-publish --build-name=quoteofday --build-number=${{ github.run_number }}
+
+    # - name: Add test Evidence
+    #   run: |
+    #     jf evd add --build-name=quoteofday --build-number=${{ github.run_number }} --package-name example-project-app  \
+    #         --key "${{ secrets.PRIVATE_KEY }}"  --key-alias KEY-ALIAS \
+    #         --predicate ./sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
+
+    - name: Create release bundle
+      run: |
+        jf release-bundle-create quoteofday ${{ github.run_number }} --signing-key PGP-RSA-2048 --build-name=quoteofday --build-number=${{ github.run_number }}
