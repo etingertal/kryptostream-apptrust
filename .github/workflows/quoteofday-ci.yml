@@ -89,8 +89,16 @@ jobs:
         # Build and push to JFrog Artifactory
         jf docker buildx build --platform linux/amd64,linux/arm64 \
           -t ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} \
-          --build-name quoteofday --build-number ${{ github.run_number }} \
-          --push .
+          --build-name quoteofday --build-number ${{ github.run_number }} 
+        jf rt docker-push ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} --build-name quoteofday --build-number ${{ github.run_number }}  
+
+    - name: Evidence on docker image
+      run: |
+        jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+        --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY \
+        --predicate evidence/test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 
+
+
 
     - name: Test Docker image
       run: |
@@ -113,13 +121,14 @@ jobs:
     - name: Publish buildinfo
       run: |
         jf rt build-add-git     quoteofday ${{ github.run_number }}
-        jf rt build-collect-env quoteofday ${{ github.run_number }}
         jf rt build-publish     quoteofday ${{ github.run_number }}
 
     - name: Add test Evidence
       run: |
         echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
-        jf evd create --build-name quoteofday --build-number ${{ github.run_number }} --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
+        jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
+          --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY \
+          --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
     - name: Create release bundle
       run: |
