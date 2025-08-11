@@ -69,28 +69,19 @@ add_floating_point() {
     local a="$1"
     local b="$2"
     
-    # Convert to integers (multiply by 1000 to preserve 3 decimal places)
-    # Remove decimal point and pad with zeros if needed
-    local a_clean=$(echo "$a" | sed 's/\.//')
-    local b_clean=$(echo "$b" | sed 's/\.//')
+    # Extract integer parts only to avoid complex arithmetic
+    local a_int=${a%.*}
+    local b_int=${b%.*}
     
-    # Pad with zeros to ensure 3 digits after decimal
-    while [ ${#a_clean} -lt 4 ]; do
-        a_clean="0$a_clean"
-    done
-    while [ ${#b_clean} -lt 4 ]; do
-        b_clean="0$b_clean"
-    done
+    # Handle empty strings
+    if [ -z "$a_int" ]; then a_int=0; fi
+    if [ -z "$b_int" ]; then b_int=0; fi
     
-    # Add integers
-    local result=$((10#$a_clean + 10#$b_clean))
+    # Simple integer addition
+    local result=$((a_int + b_int))
     
-    # Convert back to decimal (divide by 1000)
-    local whole=$((result / 1000))
-    local decimal=$((result % 1000))
-    
-    # Format with leading zeros for decimal part
-    printf "%d.%03d" "$whole" "$decimal"
+    # Return as decimal for consistency
+    echo "$result.000"
 }
 
 # Function to safely calculate percentage
