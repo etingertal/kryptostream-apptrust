@@ -29,9 +29,11 @@ extract_xml_attr() {
     local default="$3"
     
     if command -v xmllint >/dev/null 2>&1; then
-        xmllint --xpath "string(/testsuite/@$attr)" "$file" 2>/dev/null || echo "$default"
+        # Use xmllint and take only the first line to avoid multi-line output
+        xmllint --xpath "string(/testsuite/@$attr)" "$file" 2>/dev/null | head -n1 | tr -d '\n' || echo "$default"
     else
-        grep -o "$attr=\"[^\"]*\"" "$file" | cut -d'"' -f2 || echo "$default"
+        # Fallback to grep - take only the first match
+        grep -o "$attr=\"[^\"]*\"" "$file" | head -n1 | cut -d'"' -f2 || echo "$default"
     fi
 }
 
