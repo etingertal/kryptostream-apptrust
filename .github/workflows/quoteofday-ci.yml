@@ -67,9 +67,6 @@ jobs:
       run: |
         cd quoteofday
         # Build and push to JFrog Artifactory
-        docker buildx build --platform linux/amd64,linux/arm64 \
-          -t ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} .
-
-    - name: Push Docker image
-      run: |
-        jf docker push ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} 
+        jf docker buildx build --platform linux/amd64,linux/arm64 \
+          -t ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} \
+          --push .
