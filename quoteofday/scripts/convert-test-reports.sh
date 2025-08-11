@@ -64,6 +64,44 @@ extract_test_cases() {
     fi
 }
 
+# Function to safely add floating point numbers
+add_floating_point() {
+    local a="$1"
+    local b="$2"
+    
+    # Use awk for reliable floating point arithmetic
+    if command -v awk >/dev/null 2>&1; then
+        echo "$a $b" | awk '{printf "%.3f", $1 + $2}'
+    elif command -v bc >/dev/null 2>&1; then
+        echo "$a + $b" | bc -l 2>/dev/null | head -c 10
+    else
+        # Fallback: convert to integers (multiply by 1000, add, divide by 1000)
+        local a_int=$(echo "$a" | sed 's/\.//' | sed 's/^0*//')
+        local b_int=$(echo "$b" | sed 's/\.//' | sed 's/^0*//')
+        if [ -z "$a_int" ]; then a_int=0; fi
+        if [ -z "$b_int" ]; then b_int=0; fi
+        local result=$((a_int + b_int))
+        printf "%.3f" "$(echo "scale=3; $result / 1000" | bc -l 2>/dev/null || echo "0")"
+    fi
+}
+
+# Function to safely calculate percentage
+calculate_percentage() {
+    local numerator="$1"
+    local denominator="$2"
+    
+    if [ "$denominator" -eq 0 ]; then
+        echo "0"
+    elif command -v awk >/dev/null 2>&1; then
+        echo "$numerator $denominator" | awk '{printf "%.2f", ($1 * 100) / $2}'
+    elif command -v bc >/dev/null 2>&1; then
+        echo "scale=2; $numerator * 100 / $denominator" | bc -l 2>/dev/null || echo "0"
+    else
+        # Fallback: simple integer calculation
+        echo $((numerator * 100 / denominator))
+    fi
+}
+
 # Initialize JSON structure
 cat > "$OUTPUT_FILE" << EOF
 {
@@ -101,7 +139,7 @@ total_tests=0
 passed_tests=0
 failed_tests=0
 skipped_tests=0
-total_duration=0
+total_duration="0"
 test_details_json=""
 test_cases_json=""
 
@@ -128,13 +166,8 @@ for xml_file in $xml_files; do
     failed_tests=$((failed_tests + failures))
     skipped_tests=$((skipped_tests + skipped))
     
-    # Add duration (handle floating point)
-    if command -v bc >/dev/null 2>&1; then
-        total_duration=$(echo "$total_duration + $time" | bc -l 2>/dev/null || echo "$total_duration")
-    else
-        # Simple integer addition fallback
-        total_duration=$((total_duration + ${time%.*}))
-    fi
+    # Add duration using safe floating point addition
+    total_duration=$(add_floating_point "$total_duration" "$time")
     
     # Add test class details to JSON
     if [ -n "$test_details_json" ]; then
@@ -164,15 +197,7 @@ for xml_file in $xml_files; do
 done
 
 # Calculate success rate
-if [ $total_tests -gt 0 ]; then
-    if command -v bc >/dev/null 2>&1; then
-        success_rate=$(echo "scale=2; $passed_tests * 100 / $total_tests" | bc -l 2>/dev/null || echo "0")
-    else
-        success_rate=$((passed_tests * 100 / total_tests))
-    fi
-else
-    success_rate=0
-fi
+success_rate=$(calculate_percentage "$passed_tests" "$total_tests")
 
 # Create final JSON file
 cat > "$OUTPUT_FILE" << EOF
@@ -204,3 +229,22 @@ echo "   Duration: ${total_duration}s"
 # Display file size
 file_size=$(wc -c < "$OUTPUT_FILE")
 echo "📄 File size: ${file_size} bytes"
+
+# Validate JSON format
+if command -v jq >/dev/null 2>&1; then
+    if jq empty "$OUTPUT_FILE" 2>/dev/null; then
+        echo "✅ JSON validation passed"
+    else
+        echo "❌ JSON validation failed"
+        exit 1
+    fi
+elif command -v python3 >/dev/null 2>&1; then
+    if python3 -m json.tool "$OUTPUT_FILE" >/dev/null 2>&1; then
+        echo "✅ JSON validation passed"
+    else
+        echo "❌ JSON validation failed"
+        exit 1
+    fi
+else
+    echo "⚠️ No JSON validator available, skipping validation"
+fi
