@@ -62,16 +62,12 @@ jobs:
         # Create evidence directory
         mkdir -p evidence
         
-        # Run the conversion script to create evidence file
-        ./scripts/convert-test-reports.sh target/surefire-reports evidence/test-evidence.json
-        
-        # Print the file path for evidence creation
-        echo "📄 Test evidence file created at: $(pwd)/evidence/test-evidence.json"
-        echo "📄 Absolute path: ${{ github.workspace }}/quoteofday/evidence/test-evidence.json"
+        # Run the conversion script to create evidence file with markdown report
+        ./scripts/convert-test-reports.sh target/surefire-reports 
         
         # Display the JSON file
         echo "📄 Test Evidence JSON:"
-        cat evidence/test-evidence.json
+        cat test-evidence.json
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -96,10 +92,10 @@ jobs:
     - name: Evidence on docker image
       run: |
         echo "🔍 Creating evidence on docker image..."
-        cat quoteofday/evidence/test-evidence.json
+        cat quoteofday/test-evidence.json
         jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
-        --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY \
-        --predicate quoteofday/evidence/test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 --provider-id junit
+        --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY --provider-id junit \
+        --predicate quoteofday/test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 --markdown quoteofday/test-evidence.md
 
     - name: Test Docker image
       run: |

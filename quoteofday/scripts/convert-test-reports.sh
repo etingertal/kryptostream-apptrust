@@ -267,3 +267,116 @@ elif command -v python3 >/dev/null 2>&1; then
 else
     echo "⚠️ No JSON validator available, skipping validation"
 fi
+
+# Generate Markdown report
+echo "📝 Generating Markdown test report..."
+MARKDOWN_FILE="${OUTPUT_FILE%.json}.md"
+
+# Function to get status emoji
+get_status_emoji() {
+    local status="$1"
+    case "$status" in
+        "passed") echo "✅" ;;
+        "failed") echo "❌" ;;
+        "skipped") echo "⏭️" ;;
+        *) echo "❓" ;;
+    esac
+}
+
+# Function to get summary emoji
+get_summary_emoji() {
+    local success_rate="$1"
+    if [ "$(echo "$success_rate >= 90" | bc -l 2>/dev/null || echo "0")" = "1" ]; then
+        echo "🎉"
+    elif [ "$(echo "$success_rate >= 70" | bc -l 2>/dev/null || echo "0")" = "1" ]; then
+        echo "⚠️"
+    else
+        echo "🚨"
+    fi
+}
+
+# Create markdown content
+cat > "$MARKDOWN_FILE" << EOF
+# Test Results Report
+
+## 📊 Test Summary
+
+$(get_summary_emoji "$success_rate") **Overall Success Rate: ${success_rate}%**
+
+| Metric | Value |
+|--------|-------|
+| **Total Tests** | $total_tests |
+| **Passed** | ✅ $passed_tests |
+| **Failed** | ❌ $failed_tests |
+| **Skipped** | ⏭️ $skipped_tests |
+| **Duration** | ⏱️ ${total_duration}s |
+
+## 📋 Test Details by Class
+
+EOF
+
+# Add test details table
+if [ -n "$test_details_json" ]; then
+    echo "| Class | Tests | Passed | Failed | Skipped | Duration |" >> "$MARKDOWN_FILE"
+    echo "|-------|-------|--------|--------|---------|----------|" >> "$MARKDOWN_FILE"
+    
+    # Parse test_details_json to create table rows
+    echo "$test_details_json" | while IFS= read -r line; do
+        if [[ $line =~ \"class_name\":\ \"([^\"]+)\" ]]; then
+            class_name="${BASH_REMATCH[1]}"
+        elif [[ $line =~ \"tests\":\ ([0-9]+) ]]; then
+            tests="${BASH_REMATCH[1]}"
+        elif [[ $line =~ \"passed\":\ ([0-9]+) ]]; then
+            passed="${BASH_REMATCH[1]}"
+        elif [[ $line =~ \"failed\":\ ([0-9]+) ]]; then
+            failed="${BASH_REMATCH[1]}"
+        elif [[ $line =~ \"skipped\":\ ([0-9]+) ]]; then
+            skipped="${BASH_REMATCH[1]}"
+        elif [[ $line =~ \"duration\":\ ([0-9]+) ]]; then
+            duration="${BASH_REMATCH[1]}"
+            # Output the complete row
+            echo "| \`$class_name\` | $tests | ✅ $passed | ❌ $failed | ⏭️ $skipped | ${duration}s |" >> "$MARKDOWN_FILE"
+        fi
+    done
+else
+    echo "*No test details available*" >> "$MARKDOWN_FILE"
+fi
+
+# Add test cases section
+echo "" >> "$MARKDOWN_FILE"
+echo "## 🧪 Individual Test Cases" >> "$MARKDOWN_FILE"
+echo "" >> "$MARKDOWN_FILE"
+
+if [ -n "$test_cases_json" ]; then
+    echo "| Class | Test Name | Status |" >> "$MARKDOWN_FILE"
+    echo "|-------|-----------|--------|" >> "$MARKDOWN_FILE"
+    
+    # Parse test_cases_json to create table rows
+    echo "$test_cases_json" | while IFS= read -r line; do
+        if [[ $line =~ \"class\":\"([^\"]+)\" ]]; then
+            class="${BASH_REMATCH[1]}"
+        elif [[ $line =~ \"name\":\"([^\"]+)\" ]]; then
+            name="${BASH_REMATCH[1]}"
+        elif [[ $line =~ \"status\":\"([^\"]+)\" ]]; then
+            status="${BASH_REMATCH[1]}"
+            emoji=$(get_status_emoji "$status")
+            echo "| \`$class\` | \`$name\` | $emoji $status |" >> "$MARKDOWN_FILE"
+        fi
+    done
+else
+    echo "*No individual test cases available*" >> "$MARKDOWN_FILE"
+fi
+
+# Add footer
+cat >> "$MARKDOWN_FILE" << EOF
+
+---
+
+**Report generated on:** $(date)  
+**Repository:** $REPOSITORY  
+**Branch:** $BRANCH  
+**Commit:** $COMMIT_SHA  
+**Triggered by:** $TRIGGERED_BY
+EOF
+
+echo "✅ Markdown report created: $MARKDOWN_FILE"
