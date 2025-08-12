@@ -14,9 +14,9 @@ env:
 jobs:
   build-and-test:
     name: Build and Test Java
-    runs-on: self-hosted
-    # runs-on: ubuntu-latest
-    
+    # runs-on: self-hosted
+    runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
