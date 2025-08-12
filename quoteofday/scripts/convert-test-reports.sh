@@ -342,41 +342,13 @@ else
     echo "*No test details available*" >> "$MARKDOWN_FILE"
 fi
 
-# Add test cases section
-echo "" >> "$MARKDOWN_FILE"
-echo "## 🧪 Individual Test Cases" >> "$MARKDOWN_FILE"
-echo "" >> "$MARKDOWN_FILE"
-
-if [ -n "$test_cases_json" ]; then
-    echo "| Class | Test Name | Status |" >> "$MARKDOWN_FILE"
-    echo "|-------|-----------|--------|" >> "$MARKDOWN_FILE"
-    
-    # Parse test_cases_json to create table rows
-    echo "$test_cases_json" | while IFS= read -r line; do
-        if [[ $line =~ \"class\":\"([^\"]+)\" ]]; then
-            class="${BASH_REMATCH[1]}"
-        elif [[ $line =~ \"name\":\"([^\"]+)\" ]]; then
-            name="${BASH_REMATCH[1]}"
-        elif [[ $line =~ \"status\":\"([^\"]+)\" ]]; then
-            status="${BASH_REMATCH[1]}"
-            emoji=$(get_status_emoji "$status")
-            echo "| \`$class\` | \`$name\` | $emoji $status |" >> "$MARKDOWN_FILE"
-        fi
-    done
-else
-    echo "*No individual test cases available*" >> "$MARKDOWN_FILE"
-fi
-
 # Add footer
 cat >> "$MARKDOWN_FILE" << EOF
 
 ---
 
 **Report generated on:** $(date)  
-**Repository:** $REPOSITORY  
-**Branch:** $BRANCH  
-**Commit:** $COMMIT_SHA  
-**Triggered by:** $TRIGGERED_BY
+
 EOF
 
 echo "✅ Markdown report created: $MARKDOWN_FILE"

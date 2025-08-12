@@ -20,14 +20,9 @@
 | `TEST-com.example.quotefday.controller.QuoteControllerTest` | 4 | ✅ 4 | ❌ 0 | ⏭️ 0 | 1s |
 | `TEST-com.example.quotefday.QuoteOfDayApplicationTests` | 1 | ✅ 1 | ❌ 0 | ⏭️ 0 | 0s |
 
-## 🧪 Individual Test Cases
-
-| Class | Test Name | Status |
-|-------|-----------|--------|
-
 ---
 
-**Report generated on:** Tue Aug 12 09:51:18 IDT 2025  
+**Report generated on:** Tue Aug 12 10:11:13 IDT 2025  
 **Repository:** unknown  
 **Branch:** unknown  
 **Commit:** unknown  
