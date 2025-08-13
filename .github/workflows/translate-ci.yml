@@ -1,0 +1,104 @@
+name: Translate Service CI
+
+on:
+  push:
+    branches: [ main, master, develop, swampup25 ]
+    paths:
+      - 'translate/**'
+      - '.github/workflows/translate-ci.yml'
+  workflow_dispatch:
+
+env:
+  DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
+
+jobs:
+  build-and-test:
+    name: Build and Test Python
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('translate/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip
+
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4
+      with:
+        version: latest
+      env:
+        JF_URL: ${{ vars.JF_URL }}
+        JF_USER: ${{ vars.JF_USER }}
+        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      
+    - name: Install dependencies and run tests
+      run: |
+        cd translate
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+        python -m pytest tests/ -v --tb=short
+        
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Login to Docker Registry
+      run: |
+        echo "🔐 Logging into JFrog Artifactory Docker registry..."
+        echo "Registry: ${{ env.DOCKER_REGISTRY }}"
+        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
+        echo "✅ Successfully logged into Docker registry"
+      
+    - name: Build and Push Docker image
+      run: |
+        cd translate
+        # Build and push to JFrog Artifactory
+        jf docker buildx build --platform linux/amd64,linux/arm64 \
+          --tag ${{ env.DOCKER_REGISTRY }}/translate:${{ github.run_number }} \
+          --metadata-file=build-metadata --output=type=image --push .
+        jf rt build-docker-create commons-dev-docker-local  \
+          --image-file build-metadata --build-name translate --build-number ${{ github.run_number }} 
+
+    # - name: Test Docker image
+    #   run: |
+    #     cd translate
+    #     # Pull the image for testing
+    #     jf docker pull ${{ env.DOCKER_REGISTRY }}/translate:${{ github.run_number }}
+        
+    #     # Run container with better debugging
+    #     jf docker run -d --name test-translate-container -p 8000:8000 ${{ env.DOCKER_REGISTRY }}/translate:${{ github.run_number }}
+        
+    #     # Wait for container to start
+    #     sleep 10
+        
+    #     # Test health endpoint
+    #     curl -f http://localhost:8000/health || {
+    #       echo "❌ Health check failed"
+    #       exit 1
+    #     }
+        
+    #     # Test root endpoint
+    #     curl -f http://localhost:8000/ || {
+    #       echo "❌ Root endpoint check failed"
+    #       exit 1
+    #     }
+
+    - name: Publish buildinfo
+      run: |
+        jf rt build-add-git translate ${{ github.run_number }}
+        jf rt build-publish translate ${{ github.run_number }}
+
+    - name: Create release bundle
+      run: |
+        jf release-bundle-create translate ${{ github.run_number }} --build-name=translate --build-number=${{ github.run_number }}

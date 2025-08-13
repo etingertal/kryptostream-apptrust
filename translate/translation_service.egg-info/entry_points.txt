@@ -1,0 +1,2 @@
+[console_scripts]
+translation-service = simple_app:main
