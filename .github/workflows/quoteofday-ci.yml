@@ -96,7 +96,7 @@ jobs:
         jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
          --markdown quoteofday/test-evidence.md--provider-id junit \
          --predicate quoteofday/test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 \
-         --key ${{ secrets.JFROG_CLI_SIGNING_KEY }} 
+         --key ${{ secrets.JFROG_CLI_SIGNING_KEY }} --key-alias ${{ vars.JFROG_CLI_KEY_ALIAS }}
          
 
     - name: Test Docker image
@@ -127,7 +127,7 @@ jobs:
         echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
         jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
           --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 \
-          --key ${{ secrets.JFROG_CLI_SIGNING_KEY }} 
+          --key ${{ secrets.JFROG_CLI_SIGNING_KEY }} --key-alias ${{ vars.JFROG_CLI_KEY_ALIAS }}
 
     - name: Create release bundle
       run: |

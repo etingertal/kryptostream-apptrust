@@ -1,0 +1,98 @@
+name: Create Release Bundle
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-release-bundle:
+    name: Create Release Bundle
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4
+      with:
+        version: latest
+      env:
+        JF_URL: ${{ vars.JF_URL }}
+        JF_USER: ${{ vars.JF_USER }}
+        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+    
+    - name: Find latest quoteofday package version
+      id: find-quoteofday-version
+      run: |
+        QUOTEOFDAY_PATH=$(curl -s -X POST \
+          -H "Content-Type: text/plain" \
+          -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+          -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc":["created"]}).limit(1)' \
+          "${{ vars.JF_URL }}/artifactory/api/search/aql" | \
+          jq -r '.results[0].path // empty')
+        
+        if [ -z "$QUOTEOFDAY_PATH" ]; then
+          echo "Error: Could not find latest quoteofday package version"
+          exit 1
+        fi
+        
+        echo "quoteofday_path=$QUOTEOFDAY_PATH" >> $GITHUB_OUTPUT
+        echo "Found quoteofday path: $QUOTEOFDAY_PATH"
+    
+    - name: Find latest translate package version
+      id: find-translate-version
+      run: |
+        TRANSLATE_PATH=$(curl -s -X POST \
+          -H "Content-Type: text/plain" \
+          -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+          -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "translate/*"}}).sort({"$desc":["created"]}).limit(1)' \
+          "${{ vars.JF_URL }}/artifactory/api/search/aql" | \
+          jq -r '.results[0].path // empty')
+        
+        if [ -z "$TRANSLATE_PATH" ]; then
+          echo "Error: Could not find latest translate package version"
+          exit 1
+        fi
+        
+        echo "translate_path=$TRANSLATE_PATH" >> $GITHUB_OUTPUT
+        echo "Found translate path: $TRANSLATE_PATH"
+    
+    # Variables are now available as:
+    # ${{ steps.find-quoteofday-version.outputs.quoteofday_path }}
+    # ${{ steps.find-translate-version.outputs.translate_path }}
+    
+    - name: Create release bundle spec file
+      id: create-spec
+      run: |
+        # Extract version from path (remove the package name prefix)
+        QUOTEOFDAY_VERSION=$(echo "${{ steps.find-quoteofday-version.outputs.quoteofday_path }}" | sed 's|quoteofday/||')
+        TRANSLATE_VERSION=$(echo "${{ steps.find-translate-version.outputs.translate_path }}" | sed 's|translate/||')
+        
+        # Create the spec.json file
+        cat > spec.json << EOF
+        {
+            "files": [
+                {
+                    "package": "quoteofday",
+                    "version": "$QUOTEOFDAY_VERSION",
+                    "type": "docker",
+                    "repoKey": "commons-dev-docker-local"
+                },
+                {
+                    "package": "translate",
+                    "version": "$TRANSLATE_VERSION",
+                    "type": "docker",
+                    "repoKey": "commons-dev-docker-local"
+                }
+            ]
+        }
+        EOF
+        
+        echo "Created spec.json with versions:"
+        echo "  quoteofday: $QUOTEOFDAY_VERSION"
+        echo "  translate: $TRANSLATE_VERSION"
+        cat spec.json
+    
+    - name: Create release bundle
+      run: |
+        jf release-bundle-create quotopia ${{ github.run_number }} --spec spec.json
+    
+
+    
