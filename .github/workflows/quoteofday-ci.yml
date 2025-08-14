@@ -93,12 +93,10 @@ jobs:
       run: |
         echo "🔍 Creating evidence on docker image..."
         # cat quoteofday/test-evidence.json
-        CMD="jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+        jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
          --markdown quoteofday/test-evidence.md --provider-id junit \
          --predicate quoteofday/test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 \
-         --key ${{ secrets.JFROG_CLI_SIGNING_KEY }}"
-        echo "$CMD"
-        $CMD
+         --key "${{ secrets.JFROG_CLI_SIGNING_KEY }}"
 
     - name: Test Docker image
       run: |
