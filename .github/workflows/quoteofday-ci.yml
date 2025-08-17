@@ -37,17 +37,6 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('quoteofday/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
 
-    - name: Sonar scan
-      uses: SonarSource/sonarqube-scan-action@v4
-      env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      with:
-        projectBaseDir: quoteofday/
-        args: >
-          -Dsonar.qualitygate.wait=true
-          -Dsonar.organization=sela-org1
-          -Dsonar.projectKey=evidence-test 
-
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
       with:
@@ -67,6 +56,17 @@ jobs:
         # Build and deploy to Artifactory
         jf mvn deploy -q --batch-mode --no-transfer-progress --build-name quoteofday --build-number ${{ github.run_number }}
       
+    - name: Sonar scan
+      uses: SonarSource/sonarqube-scan-action@v4
+      env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        projectBaseDir: quoteofday/
+        args: >
+          -Dsonar.qualitygate.wait=true
+          -Dsonar.organization=sela-org1
+          -Dsonar.projectKey=evidence-test 
+
     - name: Create Test Evidence JSON
       run: |
         cd quoteofday
