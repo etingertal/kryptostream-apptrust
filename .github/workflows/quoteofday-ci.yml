@@ -102,10 +102,7 @@ jobs:
         SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}
         [ "" == "$SONAR_TASK_ID" ] && echo "Missing Sonar task ID."
         [ "" == "$SONAR_TOKEN" ] && echo "Missing Sonar token."
-        wget -nv -X GET -H "Authorization: Bearer $SONAR_TOKEN" -o sonar.result.json "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID" 2>&1 | cat
-        [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -nv -X GET -H "Authorization: Bearer $SONAR_TOKEN" -o sonar.result.json "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID" 
-        # To continue even when didn't get Sonar scan results
-        echo ""
+        [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -v -X GET -H "Authorization: Bearer $SONAR_TOKEN" -o sonar.result.json "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID" || echo "Did not wget the sonar results JSON."
 
     - name: Create Test Evidence JSON
       run: |
@@ -147,9 +144,7 @@ jobs:
       run: |
         [ -f "quoteofday/sonar.result.json" ] || echo "sonar.result.json file is missing."
         [ -f "quoteofday/sonar.result.json" ] && jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
-          --predicate quoteofday/sonar.result.json --predicate-type sonar --provider-id sonar
-        # To continue even when evidence wasn't created
-        echo ""
+          --predicate quoteofday/sonar.result.json --predicate-type sonar --provider-id sonar || echo "Did not create evidence from the Sonar JSON."
           
     - name: Test Docker image
       run: |
