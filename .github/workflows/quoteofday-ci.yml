@@ -103,10 +103,9 @@ jobs:
         SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}
         [ "" == "$SONAR_TASK_ID" ] && echo "Missing Sonar task ID."
         [ "" == "$SONAR_TOKEN" ] && echo "Missing Sonar token."
-        [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && SONAR_ANALYSIS_ID=$(wget -X GET -H "Authorization: Bearer $SONAR_TOKEN" "https://sonarcloud.io/api/ce/task?id=$SONAR_TASK_ID" | jq '.task.analysisId')
+        [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && SONAR_ANALYSIS_ID=$(wget -X GET --header="Authorization: Bearer $SONAR_TOKEN" "https://sonarcloud.io/api/ce/task?id=$SONAR_TASK_ID" | jq '.task.analysisId')
         echo "SONAR_ANALYSIS_ID=$SONAR_ANALYSIS_ID"
-        # [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -v -X GET -H "Authorization: Bearer $SONAR_TOKEN" -o sonar.result.json "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID"
-        [ "" != "$SONAR_ANALYSIS_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -v -X GET -H "Authorization: Bearer $SONAR_TOKEN" -o sonar.result.json "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_ANALYSIS_ID"
+        [ "" != "$SONAR_ANALYSIS_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -v -X GET --header="Authorization: Bearer $SONAR_TOKEN" -o sonar.result.json "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_ANALYSIS_ID"
         GET_RESULT_CODE=$?
         echo "GET_RESULT_CODE=$GET_RESULT_CODE"
         [ -f sonar.result.json ] && echo "Sonar result:" && cat sonar.result.json || echo "No Sonar result JSON file created."
