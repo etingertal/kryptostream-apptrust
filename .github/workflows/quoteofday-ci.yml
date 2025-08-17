@@ -15,6 +15,9 @@ jobs:
     name: Build and Test Java
     # runs-on: self-hosted
     runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
+      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
 
     steps:
     - name: Checkout code
@@ -42,9 +45,12 @@ jobs:
         JF_URL: ${{ vars.JF_URL }}
         JF_USER: ${{ vars.JF_USER }}
         JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-        JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
-        JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
 
+    - name: Simple evd
+      run: |
+        echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
+        jf evd create --subject-repo-path commons-dev-generic-local/file.txt \
+          --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
       
     - name: Build and Deploy to Artifactory
       run: |
