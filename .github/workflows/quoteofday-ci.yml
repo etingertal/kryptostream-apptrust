@@ -82,7 +82,7 @@ jobs:
 
     - name: Find txt files
       run: |
-        cd quateofday
+        cd quoteofday
         echo "Searching for txt files..."
         find . -name '*.txt'
         echo "Done searching for txt files."
