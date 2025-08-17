@@ -45,6 +45,8 @@ jobs:
         projectBaseDir: quoteofday/
         args: >
           -Dsonar.qualitygate.wait=true
+          -Dsonar.organization=sela-org1
+          -Dsonar.projectKey=evidence-test 
 
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
