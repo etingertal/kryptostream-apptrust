@@ -101,7 +101,7 @@ jobs:
         SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}
         [ "" == "$SONAR_TASK_ID" ] && echo "Missing Sonar task ID."
         [ "" == "$SONAR_TOKEN" ] && echo "Missing Sonar token."
-        [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -X GET -H "Authorization: Bearer $SONAR_TOKEN" --url "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID" -o sonar.result.json
+        [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -X GET -H "Authorization: Bearer $SONAR_TOKEN" -o sonar.result.json "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID" 
         # To continue even when didn't get Sonar scan results
         echo ""
 
