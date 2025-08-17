@@ -54,6 +54,10 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+# Cursor
+.cursorrules  
+.cursor/*
+
 # Eclipse
 .apt_generated
 .classpath
