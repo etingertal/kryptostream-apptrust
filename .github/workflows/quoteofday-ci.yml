@@ -80,16 +80,27 @@ jobs:
           -Dsonar.java.binaries=target/classes
           -Dsonar.qualitygate.wait=true
 
-    - name: Find txt files
+    - name: Find Sonar task ID
+      id: sonar_task_id_step
       run: |
         cd quoteofday
         echo "Searching for report-task.txt file..."
         REPORT_TASK_FILE=$(find . -name 'report-task.txt' | head -n1)
         [ -f "$REPORT_TASK_FILE" ] || echo "repot-task.txt file was not found."
-        [ -f "$REPORT_TASK_FILE" ] && echo "report-tesk.txt content:" && cat "$REPORT_TASK_FILE"
+        #[ -f "$REPORT_TASK_FILE" ] && echo "report-task.txt content:" && cat "$REPORT_TASK_FILE"
+        [ -f "$REPORT_TASK_FILE" ] && echo "Sonar report file: $REPORT_TASK_FILE"
         [ -f "$REPORT_TASK_FILE" ] && SONAR_TASK_ID=$(grep 'ceTaskId=' "$REPORT_TASK_FILE" | cut -d'=' -f2)
         [ "" == "$SONAR_TASK_ID" ] && echo "Sonar task ID was not found."
         [ "" != "$SONAR_TASK_ID" ] && echo "Sonar task ID: $SONAR_TASK_ID"
+        echo "sonar_task_id=$SONAR_TASK_ID" >> "$GITHUB_OUTPUT"
+
+    - name: Get Sonar analysis result file
+      run: |
+        cd quoteofday
+        SONAR_TASK_ID={{ steps.sonar_task_id_step.sonar_task_id }}
+        [ "" == "$SONAR_TASK_ID" ] && echo "Missing Sonar task ID."
+        [ "" == "$SONAR_TOKEN" ] && echo "Missing Sonar token."
+        [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -X GET -H "Authorization: Bearer $SONAR_TOKEN" --url "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID" -o sonar.result.json
 
     - name: Create Test Evidence JSON
       run: |
@@ -126,6 +137,12 @@ jobs:
         jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
           --predicate ./test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 \
           --markdown ./test-evidence.md --provider-id junit
+
+    - name: Attach Sonar result as evidence to the docker image
+      run: |
+        [ -f "quoteofday/sonar.result.json" ] || echo "sonar.result.json file is missing."
+        [ -f "quoteofday/sonar.result.json" ] && jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+          --predicate quoteofday/sonar.result.json --predicate-type sonar --provider-id sonar
           
     - name: Test Docker image
       run: |
