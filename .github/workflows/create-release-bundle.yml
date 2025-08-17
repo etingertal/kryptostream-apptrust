@@ -94,10 +94,7 @@ jobs:
       run: |
         jf release-bundle-create quotopia ${{ github.run_number }} --spec spec.json
         VER_LINK=${{ vars.JF_URL }}'/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=${{ github.run_number }}&repositoryKey=release-bundles-v2&activeVersionTab=Evidence%20Graph'
-        echo '📦 Release bundle [quotopia]:['${{ github.run_number }}']('${VER_LINK}') created' >> $GITHUB_STEP_SUMMARY
+        echo '📦 Release bundle [quotopia:${{ github.run_number }}]('${VER_LINK}') created' >> $GITHUB_STEP_SUMMARY
 
-
-    - name: Promote release bundle
-      run: |
         jf release-bundle-promote quotopia ${{ github.run_number }} DEV
-        echo "🚀 Release bundle quotopia:${{ github.run_number }} promoted to DEV" >> $GITHUB_STEP_SUMMARY
+        echo "🚀 Release bundle [quotopia:${{ github.run_number }}]('${VER_LINK}') promoted to DEV" >> $GITHUB_STEP_SUMMARY
