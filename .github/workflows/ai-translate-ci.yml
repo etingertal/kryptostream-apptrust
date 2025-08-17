@@ -18,6 +18,9 @@ jobs:
   build-and-test:
     name: Build and Test Python
     runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
+      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
 
     steps:
     - name: Checkout code
@@ -86,11 +89,15 @@ jobs:
         jf rt build-docker-create commons-dev-docker-local  \
           --image-file build-metadata --build-name ai-translate --build-number ${{ github.run_number }}
 
+    - name: Evidence on docker image
+      run: |
+        echo "🔍 Creating evidence on docker image..."
+        echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
+        cd translate
+        jf evd create --package-name ai-translate --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+          --predicate ./sign.json --predicate-type https://jfrog.com/evidence/sign/v1 
+
     - name: Publish buildinfo
       run: |
         jf rt build-add-git ai-translate ${{ github.run_number }}
         jf rt build-publish ai-translate ${{ github.run_number }}
-
-    - name: Create release bundle
-      run: |
-        jf release-bundle-create ai-translate ${{ github.run_number }} --build-name=ai-translate --build-number=${{ github.run_number }}
