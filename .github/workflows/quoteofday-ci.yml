@@ -97,10 +97,11 @@ jobs:
     - name: Get Sonar analysis result file
       run: |
         cd quoteofday
-        SONAR_TASK_ID=${{ steps.sonar_task_id_step.sonar_task_id }}
+        SONAR_TASK_ID=${{ steps.sonar_task_id_step.outputs.sonar_task_id }}
         [ "" == "$SONAR_TASK_ID" ] && echo "Missing Sonar task ID."
         [ "" == "$SONAR_TOKEN" ] && echo "Missing Sonar token."
         [ "" != "$SONAR_TASK_ID" ] && [ "" != "$SONAR_TOKEN" ] && wget -X GET -H "Authorization: Bearer $SONAR_TOKEN" --url "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$SONAR_TASK_ID" -o sonar.result.json
+        echo ""
 
     - name: Create Test Evidence JSON
       run: |
