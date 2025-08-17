@@ -95,6 +95,7 @@ jobs:
         echo "sonar_task_id=$SONAR_TASK_ID" >> "$GITHUB_OUTPUT"
 
     - name: Get Sonar analysis result file
+      continue-on-error: true
       run: |
         cd quoteofday
         SONAR_TASK_ID=${{ steps.sonar_task_id_step.outputs.sonar_task_id }}
