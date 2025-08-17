@@ -37,11 +37,14 @@ jobs:
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
       with:
-        version: latest
+        version: 2.78.3
       env:
         JF_URL: ${{ vars.JF_URL }}
         JF_USER: ${{ vars.JF_USER }}
         JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+        JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
+        JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
+
       
     - name: Build and Deploy to Artifactory
       run: |
@@ -92,8 +95,9 @@ jobs:
     - name: Evidence on docker image
       run: |
         echo "🔍 Creating evidence on docker image..."
+        echo $JFROG_CLI_KEY_ALIAS
         echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
-        jf evd create --key ${{ secrets.JFROG_CLI_SIGNING_KEY }} --key-alias ${{ vars.JFROG_CLI_KEY_ALIAS }} --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+        jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
           --predicate ./sign.json --predicate-type https://jfrog.com/evidence/test-results/v1 
           
 
@@ -124,8 +128,7 @@ jobs:
       run: |
         echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
         jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
-          --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 \
-          --key ${{ secrets.JFROG_CLI_SIGNING_KEY }} --key-alias ${{ vars.JFROG_CLI_KEY_ALIAS }}
+          --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
     - name: Create release bundle
       run: |
