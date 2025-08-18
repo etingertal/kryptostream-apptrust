@@ -181,7 +181,7 @@ jobs:
         jf rt build-add-git quoteofday ${{ github.run_number }}
         jf rt build-publish quoteofday ${{ github.run_number }}
 
-    - name: Add test Evidence
+    - name: Add signature Evidence
       run: |
         echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
         jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
