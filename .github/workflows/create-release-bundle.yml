@@ -36,34 +36,34 @@ jobs:
         echo "quoteofday_path=$QUOTEOFDAY_PATH" >> $GITHUB_OUTPUT
         echo "Found quoteofday path: $QUOTEOFDAY_PATH"
     
-    - name: Find latest translate package version
-      id: find-translate-version
+    - name: Find latest ai-translate package version
+      id: find-ai-translate-version
       run: |
-        TRANSLATE_PATH=$(curl -s -X POST \
+        AI_TRANSLATE_PATH=$(curl -s -X POST \
           -H "Content-Type: text/plain" \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-          -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "translate/*"}}).sort({"$desc":["created"]}).limit(1)' \
+          -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "ai-translate/*"}}).sort({"$desc":["created"]}).limit(1)' \
           "${{ vars.JF_URL }}/artifactory/api/search/aql" | \
           jq -r '.results[0].path // empty')
         
-        if [ -z "$TRANSLATE_PATH" ]; then
-          echo "Error: Could not find latest translate package version"
+        if [ -z "$AI_TRANSLATE_PATH" ]; then
+          echo "Error: Could not find latest ai-translate package version"
           exit 1
         fi
         
-        echo "translate_path=$TRANSLATE_PATH" >> $GITHUB_OUTPUT
-        echo "Found translate path: $TRANSLATE_PATH"
+        echo "ai-translate_path=$AI_TRANSLATE_PATH" >> $GITHUB_OUTPUT
+        echo "Found ai-translate path: $AI_TRANSLATE_PATH"
     
     # Variables are now available as:
     # ${{ steps.find-quoteofday-version.outputs.quoteofday_path }}
-    # ${{ steps.find-translate-version.outputs.translate_path }}
+    # ${{ steps.find-ai-translate-version.outputs.ai-translate_path }}
     
     - name: Create release bundle spec file
       id: create-spec
       run: |
         # Extract version from path (remove the package name prefix)
         QUOTEOFDAY_VERSION=$(echo "${{ steps.find-quoteofday-version.outputs.quoteofday_path }}" | sed 's|quoteofday/||')
-        TRANSLATE_VERSION=$(echo "${{ steps.find-translate-version.outputs.translate_path }}" | sed 's|translate/||')
+        AI_TRANSLATE_VERSION=$(echo "${{ steps.find-ai-translate-version.outputs.ai-translate_path }}" | sed 's|ai-translate/||')
         
         # Create the spec.json file
         cat > spec.json << EOF
@@ -76,8 +76,8 @@ jobs:
                     "repoKey": "commons-dev-docker-local"
                 },
                 {
-                    "package": "translate",
-                    "version": "$TRANSLATE_VERSION",
+                    "package": "ai-translate",
+                    "version": "$AI_TRANSLATE_VERSION",
                     "type": "docker",
                     "repoKey": "commons-dev-docker-local"
                 }
@@ -87,7 +87,7 @@ jobs:
         
         echo "Created spec.json with versions:"
         echo "  quoteofday: $QUOTEOFDAY_VERSION"
-        echo "  translate: $TRANSLATE_VERSION"
+        echo "  ai-translate: $AI_TRANSLATE_VERSION"
         cat spec.json
     
     - name: Create release bundle
