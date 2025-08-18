@@ -32,14 +32,16 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-test-${{ hashFiles('translate/requirements.txt') }}
-        restore-keys: ${{ runner.os }}-pip-test
+        key: ${{ runner.os }}-pip-test-${{ hashFiles('translate/requirements-optimized.txt') }}-${{ hashFiles('translate/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-test-${{ hashFiles('translate/requirements-optimized.txt') }}
+          ${{ runner.os }}-pip-test
 
     - name: Install dependencies and run tests
       run: |
         cd translate
         # Install only production dependencies for testing
-        pip install --no-cache-dir -r requirements.txt
+        pip install --no-cache-dir -r requirements-optimized.txt
         # Install minimal test dependencies
         pip install --no-cache-dir pytest pytest-asyncio
         python -m pytest tests/ -v --tb=short
@@ -47,7 +49,6 @@ jobs:
     - name: Cleanup pip cache
       run: |
         pip cache purge
-        rm -rf ~/.cache/pip
 
   build-amd64:
     name: Build AMD64 Image
