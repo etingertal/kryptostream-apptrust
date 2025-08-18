@@ -8,3 +8,4 @@ sentencepiece
 pydantic==2.5.0
 python-multipart==0.0.18
 aiohttp==3.12.14
+httpx==0.24.1
