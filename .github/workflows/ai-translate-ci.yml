@@ -15,13 +15,9 @@ env:
   HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
 jobs:
-  build-and-test:
-    name: Build and Test Python
+  test:
+    name: Test Python Service
     runs-on: ubuntu-latest
-    env:
-      JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
-      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -36,16 +32,31 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('translate/requirements.txt') }}
-        restore-keys: ${{ runner.os }}-pip
+        key: ${{ runner.os }}-pip-test-${{ hashFiles('translate/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-test
 
-    - name: Cache Hugging Face models
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/huggingface
-        key: ${{ runner.os }}-hf-models-${{ hashFiles('translate/requirements.txt') }}
-        restore-keys: ${{ runner.os }}-hf-models
+    - name: Install dependencies and run tests
+      run: |
+        cd translate
+        # Install only production dependencies for testing
+        pip install --no-cache-dir -r requirements.txt
+        # Install minimal test dependencies
+        pip install --no-cache-dir pytest pytest-asyncio
+        python -m pytest tests/ -v --tb=short
+        
+    - name: Cleanup pip cache
+      run: |
+        pip cache purge
+        rm -rf ~/.cache/pip
 
+  build-amd64:
+    name: Build AMD64 Image
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
       with:
@@ -55,13 +66,6 @@ jobs:
         JF_USER: ${{ vars.JF_USER }}
         JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
       
-    - name: Install dependencies and run tests
-      run: |
-        cd translate
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
-        python -m pytest tests/ -v --tb=short
-        
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       
@@ -72,22 +76,104 @@ jobs:
         echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
         echo "✅ Successfully logged into Docker registry"
       
-    - name: Build and Push Docker image
+    - name: Build and Push AMD64 Docker image
       run: |
         cd translate
-        # Build and push to JFrog Artifactory with layer caching and Artifactory configuration
-        jf docker buildx build --platform linux/amd64,linux/arm64 \
-          --cache-from type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache \
-          --cache-to type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache,mode=max \
+        # Build only AMD64 to save space
+        jf docker buildx build --platform linux/amd64 \
+          --cache-from type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache-amd64 \
+          --cache-to type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache-amd64,mode=max \
           --build-arg HF_HUB_ETAG_TIMEOUT=${{ env.HF_HUB_ETAG_TIMEOUT }} \
           --build-arg HF_HUB_DOWNLOAD_TIMEOUT=${{ env.HF_HUB_DOWNLOAD_TIMEOUT }} \
           --build-arg HF_ENDPOINT=${{ env.HF_ENDPOINT }} \
           --build-arg HF_TOKEN=${{ env.HF_TOKEN }} \
-          --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }} \
-          --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:latest \
-          --metadata-file=build-metadata --output=type=image --push .
+          --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}-amd64 \
+          --metadata-file=build-metadata-amd64 --output=type=image --push .
         jf rt build-docker-create commons-dev-docker-local  \
-          --image-file build-metadata --build-name ai-translate --build-number ${{ github.run_number }}
+          --image-file build-metadata-amd64 --build-name ai-translate-amd64 --build-number ${{ github.run_number }}
+
+    - name: Cleanup Docker
+      run: |
+        docker system prune -f
+        docker builder prune -f
+
+  build-arm64:
+    name: Build ARM64 Image
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4
+      with:
+        version: latest
+      env:
+        JF_URL: ${{ vars.JF_URL }}
+        JF_USER: ${{ vars.JF_USER }}
+        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Login to Docker Registry
+      run: |
+        echo "🔐 Logging into JFrog Artifactory Docker registry..."
+        echo "Registry: ${{ env.DOCKER_REGISTRY }}"
+        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
+        echo "✅ Successfully logged into Docker registry"
+      
+    - name: Build and Push ARM64 Docker image
+      run: |
+        cd translate
+        # Build only ARM64 to save space
+        jf docker buildx build --platform linux/arm64 \
+          --cache-from type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache-arm64 \
+          --cache-to type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache-arm64,mode=max \
+          --build-arg HF_HUB_ETAG_TIMEOUT=${{ env.HF_HUB_ETAG_TIMEOUT }} \
+          --build-arg HF_HUB_DOWNLOAD_TIMEOUT=${{ env.HF_HUB_DOWNLOAD_TIMEOUT }} \
+          --build-arg HF_ENDPOINT=${{ env.HF_ENDPOINT }} \
+          --build-arg HF_TOKEN=${{ env.HF_TOKEN }} \
+          --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}-arm64 \
+          --metadata-file=build-metadata-arm64 --output=type=image --push .
+        jf rt build-docker-create commons-dev-docker-local  \
+          --image-file build-metadata-arm64 --build-name ai-translate-arm64 --build-number ${{ github.run_number }}
+
+    - name: Cleanup Docker
+      run: |
+        docker system prune -f
+        docker builder prune -f
+
+  publish:
+    name: Publish and Create Evidence
+    runs-on: ubuntu-latest
+    needs: [build-amd64, build-arm64]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4
+      with:
+        version: latest
+      env:
+        JF_URL: ${{ vars.JF_URL }}
+        JF_USER: ${{ vars.JF_USER }}
+        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+
+    - name: Create multi-platform manifest
+      run: |
+        echo "🔗 Creating multi-platform manifest..."
+        docker manifest create ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }} \
+          ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}-amd64 \
+          ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}-arm64
+        docker manifest push ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
+        
+        docker manifest create ${{ env.DOCKER_REGISTRY }}/ai-translate:latest \
+          ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}-amd64 \
+          ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}-arm64
+        docker manifest push ${{ env.DOCKER_REGISTRY }}/ai-translate:latest
 
     - name: Evidence on docker image
       run: |
@@ -101,3 +187,7 @@ jobs:
       run: |
         jf rt build-add-git ai-translate ${{ github.run_number }}
         jf rt build-publish ai-translate ${{ github.run_number }}
+
+    - name: Create release bundle
+      run: |
+        jf release-bundle-create ai-translate ${{ github.run_number }} --build-name=ai-translate --build-number=${{ github.run_number }}
