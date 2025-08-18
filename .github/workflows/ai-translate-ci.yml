@@ -128,8 +128,9 @@ jobs:
     - name: Build and Push ARM64 Docker image
       run: |
         cd translate
-        # Build only ARM64 to save space
+        # Build ARM64 using CPU-only PyTorch for faster builds
         jf docker buildx build --platform linux/arm64 \
+          --file Dockerfile.arm64 \
           --cache-from type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache-arm64 \
           --cache-to type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache-arm64,mode=max \
           --build-arg HF_HUB_ETAG_TIMEOUT=${{ env.HF_HUB_ETAG_TIMEOUT }} \
