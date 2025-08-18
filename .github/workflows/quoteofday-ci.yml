@@ -113,6 +113,8 @@ jobs:
         [ -f sonar.result.json ] && echo "Sonar result:" && cat sonar.result.json || echo "No Sonar result JSON file created."
         # If the output file contains only the returned error message delete it so the evidence creation step won't try to create an evidence out of it.
         [ $GET_RESULT_CODE -ne 0 ] && rm sonar.result.json
+        # return 0 if GET_RESULT_CODE is 0
+        [ $GET_RESULT_CODE -eq 0 ]
 
     - name: Create Test Evidence JSON
       run: |
