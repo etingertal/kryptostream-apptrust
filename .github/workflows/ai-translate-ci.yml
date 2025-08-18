@@ -18,6 +18,9 @@ jobs:
   test:
     name: Test Python Service
     runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
+      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -94,35 +97,6 @@ jobs:
         jf rt build-docker-create commons-dev-docker-local  \
           --image-file build-metadata --build-name ai-translate --build-number ${{ github.run_number }}
 
-    - name: Cleanup Docker
-      run: |
-        docker system prune -f
-        docker builder prune -f
-
-  publish:
-    name: Publish and Create Evidence
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup JFrog CLI
-      uses: jfrog/setup-jfrog-cli@v4
-      with:
-        version: latest
-      env:
-        JF_URL: ${{ vars.JF_URL }}
-        JF_USER: ${{ vars.JF_USER }}
-        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-
-    - name: Login to Docker Registry
-      run: |
-        echo "🔐 Logging into JFrog Artifactory Docker registry..."
-        echo "Registry: ${{ env.DOCKER_REGISTRY }}"
-        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
-        echo "✅ Successfully logged into Docker registry"
-
     - name: Verify Docker image
       run: |
         echo "🔍 Verifying Docker image..."
@@ -145,3 +119,5 @@ jobs:
     - name: Create release bundle
       run: |
         jf release-bundle-create ai-translate ${{ github.run_number }} --build-name=ai-translate --build-number=${{ github.run_number }}
+        
+        
