@@ -21,76 +21,90 @@ jobs:
         JF_USER: ${{ vars.JF_USER }}
         JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
     
-    - name: Find latest quoteofday package version
-      id: find-quoteofday-version
+    - name: Get latest quoteofday build number
+      id: get-latest-builds
       run: |
-        QUOTEOFDAY_PATH=$(curl -s -X POST \
-          -H "Content-Type: text/plain" \
+        # Fetch build information from Artifactory API
+        BUILD_RESPONSE=$(curl -s -X GET \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-          -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc":["created"]}).limit(1)' \
-          "${{ vars.JF_URL }}/artifactory/api/search/aql" | \
-          jq -r '.results[0].path // empty')
+          "${{ vars.JF_URL }}/artifactory/api/build/quoteofday")
+        LATEST_QUOTEOFDAY_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
+          jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
         
-        if [ -z "$QUOTEOFDAY_PATH" ]; then
-          echo "Error: Could not find latest quoteofday package version"
-          exit 1
-        fi
-        
-        echo "quoteofday_path=$QUOTEOFDAY_PATH" >> $GITHUB_OUTPUT
-        echo "Found quoteofday path: $QUOTEOFDAY_PATH"
-    
-    - name: Find latest ai-translate package version
-      id: find-ai-translate-version
-      run: |
-        AI_TRANSLATE_PATH=$(curl -s -X POST \
-          -H "Content-Type: text/plain" \
+        echo "latest_quoteofday_build_number=$LATEST_QUOTEOFDAY_BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "Found latest quoteofday build number: $LATEST_QUOTEOFDAY_BUILD_NUMBER"
+
+        BUILD_RESPONSE=$(curl -s -X GET \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-          -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "ai-translate/*"}}).sort({"$desc":["created"]}).limit(1)' \
-          "${{ vars.JF_URL }}/artifactory/api/search/aql" | \
-          jq -r '.results[0].path // empty')
+          "${{ vars.JF_URL }}/artifactory/api/build/ai-translate")
+        LATEST_AI_TRANSLATE_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
+          jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
         
-        if [ -z "$AI_TRANSLATE_PATH" ]; then
-          echo "Error: Could not find latest ai-translate package version"
-          exit 1
-        fi
-        
-        echo "ai-translate_path=$AI_TRANSLATE_PATH" >> $GITHUB_OUTPUT
-        echo "Found ai-translate path: $AI_TRANSLATE_PATH"
+        echo "latest_ai_translate_build_number=$LATEST_AI_TRANSLATE_BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "Found latest ai-translate build number: $LATEST_AI_TRANSLATE_BUILD_NUMBER"
     
-    # Variables are now available as:
-    # ${{ steps.find-quoteofday-version.outputs.quoteofday_path }}
-    # ${{ steps.find-ai-translate-version.outputs.ai-translate_path }}
+    # - name: Find latest quoteofday package version
+    #   id: find-quoteofday-version
+    #   run: |
+    #     QUOTEOFDAY_PATH=$(curl -s -X POST \
+    #       -H "Content-Type: text/plain" \
+    #       -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+    #       -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc":["created"]}).limit(1)' \
+    #       "${{ vars.JF_URL }}/artifactory/api/search/aql" | \
+    #       jq -r '.results[0].path // empty')
+        
+    #     if [ -z "$QUOTEOFDAY_PATH" ]; then
+    #       echo "Error: Could not find latest quoteofday package version"
+    #       exit 1
+    #     fi
+        
+    #     echo "quoteofday_path=$QUOTEOFDAY_PATH" >> $GITHUB_OUTPUT
+    #     echo "Found quoteofday path: $QUOTEOFDAY_PATH"
+    
+    # - name: Find latest ai-translate package version
+    #   id: find-ai-translate-version
+    #   run: |
+    #     AI_TRANSLATE_PATH=$(curl -s -X POST \
+    #       -H "Content-Type: text/plain" \
+    #       -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+    #       -d 'items.find({"repo": "commons-dev-docker-local", "name": "list.manifest.json", "path": {"$match": "ai-translate/*"}}).sort({"$desc":["created"]}).limit(1)' \
+    #       "${{ vars.JF_URL }}/artifactory/api/search/aql" | \
+    #       jq -r '.results[0].path // empty')
+        
+    #     if [ -z "$AI_TRANSLATE_PATH" ]; then
+    #       echo "Error: Could not find latest ai-translate package version"
+    #       exit 1
+    #     fi
+        
+    #     echo "ai-translate_path=$AI_TRANSLATE_PATH" >> $GITHUB_OUTPUT
+    #     echo "Found ai-translate path: $AI_TRANSLATE_PATH"
+    
+
     
     - name: Create release bundle spec file
       id: create-spec
       run: |
         # Extract version from path (remove the package name prefix)
-        QUOTEOFDAY_VERSION=$(echo "${{ steps.find-quoteofday-version.outputs.quoteofday_path }}" | sed 's|quoteofday/||')
-        AI_TRANSLATE_VERSION=$(echo "${{ steps.find-ai-translate-version.outputs.ai-translate_path }}" | sed 's|ai-translate/||')
+        QUOTEOFDAY_BUILD_NUMBER=$(echo "${{ steps.get-latest-builds.outputs.latest_quoteofday_build_number }}" 
+        AI_TRANSLATE_BUILD_NUMBER=$(echo "${{ steps.get-latest-builds.outputs.latest_ai_translate_build_number }}" 
         
         # Create the spec.json file
         cat > spec.json << EOF
         {
             "files": [
                 {
-                    "package": "quoteofday",
-                    "version": "$QUOTEOFDAY_VERSION",
-                    "type": "docker",
-                    "repoKey": "commons-dev-docker-local"
+                    "build": "quoteofday/$QUOTEOFDAY_BUILD_NUMBER",
                 },
                 {
-                    "package": "ai-translate",
-                    "version": "$AI_TRANSLATE_VERSION",
-                    "type": "docker",
-                    "repoKey": "commons-dev-docker-local"
+                    "build": "ai-translate/$AI_TRANSLATE_BUILD_NUMBER",
                 }
             ]
         }
         EOF
         
         echo "Created spec.json with versions:"
-        echo "  quoteofday: $QUOTEOFDAY_VERSION"
-        echo "  ai-translate: $AI_TRANSLATE_VERSION"
+        echo "  quoteofday: $QUOTEOFDAY_BUILD_NUMBER"
+        echo "  ai-translate: $AI_TRANSLATE_BUILD_NUMBER"
         cat spec.json
     
     - name: Create release bundle
@@ -100,4 +114,4 @@ jobs:
         echo '📦 Release bundle [quotopia:${{ github.run_number }}]('${VER_LINK}') created' >> $GITHUB_STEP_SUMMARY
 
         jf release-bundle-promote quotopia ${{ github.run_number }} DEV
-        echo "🚀 Release bundle [quotopia:${{ github.run_number }}]('${VER_LINK}') promoted to DEV" >> $GITHUB_STEP_SUMMARY
+        echo '🚀 Release bundle [quotopia:${{ github.run_number }}]('${VER_LINK}') promoted to DEV' >> $GITHUB_STEP_SUMMARY
