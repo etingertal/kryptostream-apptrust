@@ -28,31 +28,13 @@ jobs:
         PROMOTION_RESPONSE=$(curl -s -X GET \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
           "${{ vars.JF_URL }}/lifecycle/api/v2/promotion/records/quotopia")
-        
-        if [ $? -ne 0 ]; then
-          echo "Error: Failed to fetch promotion records from Artifactory"
-          exit 1
-        fi
-        
-        # Extract the latest DEV release bundle version using jq
+
         # Filter for environment "DEV", sort by "created" field in descending order, and get the first one
         LATEST_DEV_VERSION=$(echo "$PROMOTION_RESPONSE" | \
           jq -r '.promotions | map(select(.environment == "DEV")) | sort_by(.created) | reverse | .[0].release_bundle_version')
         
-        if [ -z "$LATEST_DEV_VERSION" ] || [ "$LATEST_DEV_VERSION" = "null" ]; then
-          echo "Error: Could not find latest DEV release bundle version"
-          echo "Response: $PROMOTION_RESPONSE"
-          exit 1
-        fi
-        
         echo "latest_dev_version=$LATEST_DEV_VERSION" >> $GITHUB_OUTPUT
         echo "Found latest DEV release bundle version: $LATEST_DEV_VERSION"
-        
-        # Also extract the created timestamp for reference
-        LATEST_DEV_CREATED=$(echo "$PROMOTION_RESPONSE" | \
-          jq -r '.promotions | map(select(.environment == "DEV")) | sort_by(.created) | reverse | .[0].created')
-        echo "latest_dev_created=$LATEST_DEV_CREATED" >> $GITHUB_OUTPUT
-        echo "Latest DEV release bundle created at: $LATEST_DEV_CREATED"
     
     - name: Promote to QA
       run: |
