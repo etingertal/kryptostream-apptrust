@@ -156,7 +156,7 @@ jobs:
       run: |
         [ -f "quoteofday/sonar.result.json" ] || echo "sonar.result.json file is missing."
         [ -f "quoteofday/sonar.result.json" ] && jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
-          --predicate quoteofday/sonar.result.json --predicate-type sonar --provider-id sonar || echo "Did not create evidence from the Sonar JSON."
+          --predicate quoteofday/sonar.result.json --predicate-type "https://jfrog.com/evidence/sonar-results/v1" --provider-id sonar || echo "Did not create evidence from the Sonar JSON."
           
     - name: Test Docker image
       run: |
