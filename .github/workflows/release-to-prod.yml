@@ -1,4 +1,4 @@
-name: Promote to QA
+name: Release to PROD
 
 on:
   push:
@@ -50,7 +50,7 @@ jobs:
           
           # Create a link to the QA release bundle
           QA_LINK="${{ vars.JF_URL }}/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=$LATEST_QA_VERSION&repositoryKey=release-bundles-v2&activeVersionTab=Evidence%20Graph"
-          echo "🔗 PROD Release Bundle: [quotopia:$LATEST_QA_VERSION QA]($QA_LINK)" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 Release [quotopia:$LATEST_QA_VERSION QA]($QA_LINK) to PROD" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ Failed to release quotopia version $LATEST_QA_VERSION to PROD"
           exit 1
