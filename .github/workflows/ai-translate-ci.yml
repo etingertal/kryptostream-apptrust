@@ -114,6 +114,19 @@ jobs:
         jf evd create --package-name ai-translate --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
           --predicate ./sign.json --predicate-type https://jfrog.com/evidence/sign/v1 
 
+    - name: Run Grype scan
+      id: grype
+      uses: anchore/scan-action@v6
+      with:
+        image: ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
+        fail-build: false
+        output-format: json
+
+    - name: Create evidence from Grype scan result
+      run: |
+        jf evd create --package-name ai-translate --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+          --predicate ${{ steps.grype.outputs.json }} --provider-id grype --predicate-type https://jfrog.com/evidence/grype/v1
+
     - name: Publish buildinfo
       run: |
         jf rt build-add-git ai-translate ${{ github.run_number }}
