@@ -187,6 +187,3 @@ jobs:
         jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
           --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
-    - name: Create release bundle
-      run: |
-        jf release-bundle-create quoteofday ${{ github.run_number }} --build-name=quoteofday --build-number=${{ github.run_number }}

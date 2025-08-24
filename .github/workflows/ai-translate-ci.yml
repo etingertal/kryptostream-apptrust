@@ -94,8 +94,7 @@ jobs:
           --build-arg HF_HUB_DOWNLOAD_TIMEOUT=${{ env.HF_HUB_DOWNLOAD_TIMEOUT }} \
           --build-arg HF_ENDPOINT=${{ env.HF_ENDPOINT }} \
           --build-arg HF_TOKEN=${{ env.HF_TOKEN }} \
-          --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }} \
-          --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:latest \
+          --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }} 
           --metadata-file=build-metadata --output=type=image --push .
         jf rt build-docker-create commons-dev-docker-local  \
           --image-file build-metadata --build-name ai-translate --build-number ${{ github.run_number }}
@@ -106,34 +105,21 @@ jobs:
         docker pull ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
         docker images ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
 
-    - name: Evidence on docker image
-      run: |
-        cd translate
-        echo "🔍 Creating evidence on docker image..."
-        echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
-        jf evd create --package-name ai-translate --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
-          --predicate ./sign.json --predicate-type https://jfrog.com/evidence/sign/v1 
-
     - name: Run Grype scan
       id: grype
       uses: anchore/scan-action@v6
       with:
         image: ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
         fail-build: false
-        output-format: json
+        output-format: cyclonedx-json
 
     - name: Create evidence from Grype scan result
       run: |
         jf evd create --package-name ai-translate --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
-          --predicate ${{ steps.grype.outputs.json }} --provider-id grype --predicate-type https://jfrog.com/evidence/grype/v1
+          --predicate ${{ steps.grype.outputs.json }} --provider-id anchore --predicate-type https://anchore.com/evidence/grype/v1
 
     - name: Publish buildinfo
       run: |
         jf rt build-add-git ai-translate ${{ github.run_number }}
-        jf rt build-publish ai-translate ${{ github.run_number }}
+        jf rt build-publish ai-translate ${{ github.run_number }} 
 
-    - name: Create release bundle
-      run: |
-        jf release-bundle-create ai-translate ${{ github.run_number }} --build-name=ai-translate --build-number=${{ github.run_number }}
-        
-        
