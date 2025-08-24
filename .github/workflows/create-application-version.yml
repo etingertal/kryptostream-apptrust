@@ -1,0 +1,89 @@
+name: Create Release Bundle
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-application-version:
+    name: Create Application Version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          version: latest
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_USER: ${{ vars.JF_USER }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          APP_ID: evidencedemo
+
+      - name: Get latest quoteofday and ai-translate build numbers
+        id: get-latest-builds
+        run: |
+          # Fetch build information from Artifactory API
+          BUILD_RESPONSE=$(curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+            "${{ vars.JF_URL }}/artifactory/api/build/quoteofday")
+          LATEST_QUOTEOFDAY_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
+            jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
+          
+          echo "latest_quoteofday_build_number=$LATEST_QUOTEOFDAY_BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Found latest quoteofday build number: $LATEST_QUOTEOFDAY_BUILD_NUMBER"
+  
+          BUILD_RESPONSE=$(curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+            "${{ vars.JF_URL }}/artifactory/api/build/ai-translate")
+          LATEST_AI_TRANSLATE_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
+            jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
+          
+          echo "latest_ai_translate_build_number=$LATEST_AI_TRANSLATE_BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Found latest ai-translate build number: $LATEST_AI_TRANSLATE_BUILD_NUMBER"
+
+      - name: Get the latest application version
+        id: app_ver
+        run: |
+          LATEST_VER=$(curl -H "Authorization: Bearer $JF_ACCESS_TOKEN" "$JF_URL/apptrust/api/v1/applications/$APP_ID/versions?order_by=created&limit=1" | jq '.versions[0].version')
+          echo "LATEST_VER=$LATEST_VER"
+          if [ "" != "$LATEST_VER" ]; then
+              echo "latest_ver=$LATEST_VER" >> $GITHUB_OUTPUT
+          else 
+              echo "latest_ver=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create an application version
+        id: create_app_ver
+        run: |
+          set +e
+          LASTEST_VER=${{ steps.app_ver.latest_ver }}
+          QUOTEOFDAY_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_quoteofday_build_number }}"
+          AI_TRANSLATE_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_ai_translate_build_number }}"
+  
+          ((NEXT_VER=LATEST_VER+1))
+          echo "NEXT_VER=$NEXT_VER"
+  
+          REQUEST_BODY="{\"version\": \"$NEXT_VER\", \"sources\": {\"builds\": [\
+          {\"name\":\"quoteofday\", \"number\":\"$QUOTEOFDAY_BUILD_NUMBER\", \"include_dependencies\":\"true\"}\
+          {\"name\":\"ai-translate\", \"number\":\"$AI_TRANSLATE_BUILD_NUMBER\", \"include_dependencies\":\"true\"}\
+          ]}}"
+          echo "REQUEST_BODY=$REQUEST_BODY"
+  
+          STATUS_CODE=$(curl -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/?async=false")
+          echo "STATUS_CODE=$STATUS_CODE"
+          if [ "201" != "$STATUS_CODE" ]; then 
+              echo "Status code is not 201: $STATUS_CODE"
+              exit 1
+          fi
+          echo "app_ver=$NEXT_VER" >> $GITHUB_OUTPUT
+
+      - name: Promote application to DEV
+        run: |
+          APP_VER=${{ steps.create_app_ver.outputs.app_ver }}
+          STATUS_CODE=$(curl -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "{\"target_stage\":\"DEV\"}" "$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/promote")
+          echo "STATUS_CODE=$STATUS_CODE"
+          if [ "200" != "$STATUS_CODE" -a "201" != "$STATUS_CODE" ]; then 
+              echo "Status code is not 200 or 201: $STATUS_CODE"
+              exit 1
+          fi
+          echo "Successfully promoted $APP_ID version $APP_VER to DEV"
