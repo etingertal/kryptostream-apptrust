@@ -57,7 +57,7 @@ jobs:
           ]}}"
           echo "REQUEST_BODY=$REQUEST_BODY"
   
-          STATUS_CODE=$(curl -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$JF_URL/apptrust/api/v1/applications/$APP_ID/versions?async=false")
+          STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$JF_URL/apptrust/api/v1/applications/$APP_ID/versions?async=false")
           echo "STATUS_CODE=$STATUS_CODE"
           if [ "201" != "$STATUS_CODE" ]; then 
               echo "Status code is not 201: $STATUS_CODE"
