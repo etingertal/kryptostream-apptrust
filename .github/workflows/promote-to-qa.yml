@@ -164,7 +164,7 @@ jobs:
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "workflow": "promote-to-qa",
             "qa_version": "${{ env.LATEST_QA_VERSION }}",
-            "quote_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/quote-of-day-service:${{ steps.get-images.outputs.quote_image_tag }}",
+            "quote_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${{ steps.get-images.outputs.quote_image_tag }}",
             "translation_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }}",
             "environment": "qa",
             "status": "$(if [ -f e2e-tests/test-results.json ]; then echo 'completed'; else echo 'failed'; fi)"
