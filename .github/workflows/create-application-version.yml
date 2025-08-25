@@ -70,7 +70,7 @@ jobs:
       - name: Promote application to DEV
         run: |
           APP_VER=${{ steps.create_app_ver.outputs.app_ver }}
-          REQUEST_BODY="{\"target_stage\":\"swampup-DEV\"}"
+          REQUEST_BODY="{\"target_stage\":\"DEV\"}"
           REQUEST_URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/promote?async=false"
           
           echo "APP_VER=$APP_VER"
