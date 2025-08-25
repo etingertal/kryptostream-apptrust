@@ -60,8 +60,12 @@ jobs:
     #     fi
 
      
-    - name: Setup Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - name: Login to Docker Registry
+      run: |
+        echo "🔐 Logging into JFrog Artifactory Docker registry..."
+        echo "Registry: ${{ vars.JF_URL }}"
+        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ vars.JF_URL }}
+        echo "✅ Successfully logged into Docker registry"
         
     - name: Get Docker images from QA repository
       id: get-images
