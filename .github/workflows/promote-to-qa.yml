@@ -141,7 +141,7 @@ jobs:
     - name: Run E2E tests
       run: |
         # Start services and run tests
-        docker-compose -f e2e-test-compose.yml up --abort-on-container-exit
+        docker compose -f e2e-test-compose.yml up --abort-on-container-exit
         
         # Check if tests passed
         if [ $? -eq 0 ]; then
@@ -187,6 +187,6 @@ jobs:
       run: |
         # Clean up generated files and containers
         rm -f e2e-test-compose.yml
-        docker-compose -f e2e-test-compose.yml down -v 2>/dev/null || true
+        docker compose -f e2e-test-compose.yml down -v 2>/dev/null || true
         docker system prune -f
         
