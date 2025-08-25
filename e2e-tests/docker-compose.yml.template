@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
   quote-service:
-    image: evidencetrial.jfrog.io/commons-qa-docker-local/quote-of-day-service:${QUOTE_IMAGE_TAG}
+    image: evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${QUOTE_IMAGE_TAG}
     container_name: quote-service-qa
     ports:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=qa
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/quotes/health"]
       interval: 30s
       timeout: 10s
       retries: 5
