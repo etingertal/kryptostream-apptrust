@@ -1,9 +1,6 @@
 name: Promote to QA
 
 on:
-  push:
-    paths:
-      - '.github/workflows/promote-to-qa.yml'
   workflow_dispatch:
 
 jobs:
@@ -12,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
       with:
@@ -49,8 +49,8 @@ jobs:
           echo "✅ Successfully promoted quotopia version $LATEST_DEV_VERSION to QA"
           
           # Create a link to the QA release bundle
-          QA_LINK="${{ vars.JF_URL }}/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=$LATEST_DEV_VERSION&repositoryKey=release-bundles-v2&activeVersionTab=Evidence%20Graph"
-          echo "🔗 QA Release Bundle: [quotopia:$LATEST_DEV_VERSION]($QA_LINK)" >> $GITHUB_STEP_SUMMARY
+          QA_LINK="${{ vars.JF_URL }}/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=$LATEST_DEV_VERSION&repositoryKey=release-bundles-v2&activeKanbanTab=promotion"
+          echo "🥡 QA Release Bundle: [quotopia:$LATEST_DEV_VERSION]($QA_LINK)" >> $GITHUB_STEP_SUMMARY
           
           # Store the version for the E2E test job
           echo "LATEST_QA_VERSION=$LATEST_DEV_VERSION" >> $GITHUB_ENV
@@ -59,45 +59,9 @@ jobs:
           exit 1
         fi
 
-  e2e-test:
-    name: End-to-End Tests
-    runs-on: ubuntu-latest
-    needs: promote-to-qa
-    if: success()
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
+     
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
-    - name: Setup JFrog CLI
-      uses: jfrog/setup-jfrog-cli@v4
-      with:
-        version: latest
-      env:
-        JF_URL: ${{ vars.JF_URL }}
-        JF_USER: ${{ vars.JF_USER }}
-        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-        
-    - name: Configure JFrog Artifactory
-      run: |
-        jf c add --url ${{ vars.JF_URL }} --user ${{ vars.JF_USER }} --password ${{ secrets.JF_ACCESS_TOKEN }} --interactive=false
-        
-    - name: Verify required secrets
-      run: |
-        if [ -z "${{ secrets.HF_TOKEN }}" ]; then
-          echo "❌ HF_TOKEN secret is not set"
-          exit 1
-        fi
-        
-        if [ -z "${{ vars.HF_ENDPOINT }}" ]; then
-          echo "❌ HF_ENDPOINT variable is not set"
-          exit 1
-        fi
-        
-        echo "✅ Required secrets and variables are configured"
         
     - name: Get Docker images from QA repository
       id: get-images
@@ -110,101 +74,33 @@ jobs:
         QUOTE_IMAGE_TAG=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
           -H "Content-Type: text/plain" \
-          -d 'items.find({"repo": "commons-qa-docker-local", "name": {"$match": "quote-of-day-service*"}}).sort({"$desc": ["created"]}).limit(1)' \
-          "${{ vars.JF_URL }}/artifactory/api/search/aql" | jq -r '.results[0].name' | sed 's/quote-of-day-service-//' | sed 's/\.tar//')
+          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}).sort({"$desc": ["created"]}).limit(1)' \
+            "${{ vars.JF_URL }}/artifactory/api/search/aql" | jq -r '.results[0].path | split("/") | .[1]' )
         
         TRANSLATION_IMAGE_TAG=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
           -H "Content-Type: text/plain" \
-          -d 'items.find({"repo": "commons-qa-docker-local", "name": {"$match": "ai-translate*"}}).sort({"$desc": ["created"]}).limit(1)' \
-          "${{ vars.JF_URL }}/artifactory/api/search/aql" | jq -r '.results[0].name' | sed 's/ai-translate-//' | sed 's/\.tar//')
-        
-        # Fallback to using the QA version if specific tags not found
-        if [ -z "$QUOTE_IMAGE_TAG" ] || [ "$QUOTE_IMAGE_TAG" = "null" ]; then
-          QUOTE_IMAGE_TAG="$LATEST_QA_VERSION"
-          echo "⚠️  Using QA version as quote service tag: $QUOTE_IMAGE_TAG"
-        fi
-        
-        if [ -z "$TRANSLATION_IMAGE_TAG" ] || [ "$TRANSLATION_IMAGE_TAG" = "null" ]; then
-          TRANSLATION_IMAGE_TAG="$LATEST_QA_VERSION"
-          echo "⚠️  Using QA version as translation service tag: $TRANSLATION_IMAGE_TAG"
-        fi
-        
+          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "ai-translate/*"}).sort({"$desc": ["created"]}).limit(1)' \
+            "${{ vars.JF_URL }}/artifactory/api/search/aql" | jq -r '.results[0].path | split("/") | .[1]' )
+    
         echo "quote_image_tag=$QUOTE_IMAGE_TAG" >> $GITHUB_OUTPUT
         echo "translation_image_tag=$TRANSLATION_IMAGE_TAG" >> $GITHUB_OUTPUT
         
-        echo "Quote service image: evidencetrial.jfrog.io/commons-qa-docker-local/quote-of-day-service:$QUOTE_IMAGE_TAG"
-        echo "Translation service image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:$TRANSLATION_IMAGE_TAG"
+        echo "Quote service image: evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:$QUOTE_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+        echo "Translation service image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:$TRANSLATION_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
         
-    - name: Create E2E test Docker Compose file
+    - name: Generate E2E test Docker Compose file
       run: |
-        cat > e2e-test-compose.yml << 'EOF'
-        version: '3.8'
+        # Set environment variables for template substitution
+        export QUOTE_IMAGE_TAG="${{ steps.get-images.outputs.quote_image_tag }}"
+        export TRANSLATION_IMAGE_TAG="${{ steps.get-images.outputs.translation_image_tag }}"
         
-        services:
-          quote-service:
-            image: evidencetrial.jfrog.io/commons-qa-docker-local/quote-of-day-service:${{ steps.get-images.outputs.quote_image_tag }}
-            container_name: quote-service-qa
-            ports:
-              - "8080:8080"
-            environment:
-              - SPRING_PROFILES_ACTIVE=qa
-            healthcheck:
-              test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-              interval: 30s
-              timeout: 10s
-              retries: 5
-              start_period: 40s
-              
-          translation-service:
-            image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }}
-            container_name: translation-service-qa
-            ports:
-              - "8000:8000"
-            environment:
-              - TRANSFORMERS_CACHE=/app/models
-              - HF_HOME=/app/models
-              - HF_HUB_ETAG_TIMEOUT=86400
-              - HF_HUB_DOWNLOAD_TIMEOUT=86400
-              - HF_ENDPOINT=${{ vars.HF_ENDPOINT }}
-              - HF_TOKEN=${{ secrets.HF_TOKEN }}
-            volumes:
-              - model-cache:/app/models
-            healthcheck:
-              test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-              interval: 30s
-              timeout: 10s
-              retries: 5
-              start_period: 60s
-              
-          e2e-tests:
-            image: python:3.11-slim
-            container_name: e2e-test-runner-qa
-            depends_on:
-              quote-service:
-                condition: service_healthy
-              translation-service:
-                condition: service_healthy
-            environment:
-              - QUOTE_SERVICE_URL=http://quote-service:8080
-              - TRANSLATION_SERVICE_URL=http://translation-service:8000
-            volumes:
-              - ./local-run/e2e-tests:/app/tests
-            working_dir: /app/tests
-            command: |
-              sh -c "
-                apt-get update && apt-get install -y curl jq &&
-                pip install -r requirements.txt &&
-                python run-ci-tests.py
-              "
-              
-        volumes:
-          model-cache:
-            
-        networks:
-          default:
-            name: e2e-test-network
-        EOF
+        # Substitute variables in the template
+        envsubst < e2e-tests/docker-compose.yml.template > e2e-test-compose.yml
+        
+        # Display the generated file for debugging
+        echo "Generated Docker Compose file:"
+        cat e2e-test-compose.yml
         
     - name: Run E2E tests
       run: |
@@ -231,7 +127,7 @@ jobs:
             "quote_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/quote-of-day-service:${{ steps.get-images.outputs.quote_image_tag }}",
             "translation_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }}",
             "environment": "qa",
-            "status": "$(if [ -f local-run/e2e-tests/test-results.json ]; then echo 'completed'; else echo 'failed'; fi)"
+            "status": "$(if [ -f e2e-tests/test-results.json ]; then echo 'completed'; else echo 'failed'; fi)"
           },
           "services": {
             "quote_service": {
@@ -243,25 +139,18 @@ jobs:
               "health": "$(curl -s http://localhost:8000/health | jq -r '.status' 2>/dev/null || echo 'unknown')"
             }
           },
-          "test_results": $(cat local-run/e2e-tests/test-results.json 2>/dev/null || echo '{"summary": {"total": 0, "passed": 0, "failed": 0}}')
+          "test_results": $(cat e2e-tests/test-results.json 2>/dev/null || echo '{"summary": {"total": 0, "passed": 0, "failed": 0}}')
         }
         EOF
         
         echo "📊 Test results saved to e2e-test-results.json"
         cat e2e-test-results.json | jq .
         
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: e2e-test-results-${{ env.LATEST_QA_VERSION }}
-        path: |
-          e2e-test-results.json
-          local-run/e2e-tests/test-results.json
-        retention-days: 30
-        
-    - name: Cleanup containers
+    - name: Cleanup
       if: always()
       run: |
-        docker-compose -f e2e-test-compose.yml down -v
+        # Clean up generated files and containers
+        rm -f e2e-test-compose.yml
+        docker-compose -f e2e-test-compose.yml down -v 2>/dev/null || true
         docker system prune -f
+        
