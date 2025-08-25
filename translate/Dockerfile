@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Accept build arguments for Artifactory configuration
+# Accept build arguments for model caching and Artifactory
 ARG HF_HUB_ETAG_TIMEOUT
 ARG HF_HUB_DOWNLOAD_TIMEOUT
 ARG HF_ENDPOINT

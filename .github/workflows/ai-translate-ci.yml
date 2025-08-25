@@ -113,6 +113,8 @@ jobs:
         fail-build: false
         output-format: cyclonedx-json
         output-file: grype-output.json
+        severity-cutoff: "high"
+        cache-db: true
 
     - name: Create evidence from Grype scan result
       run: |
