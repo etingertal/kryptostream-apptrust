@@ -7,6 +7,9 @@ jobs:
   promote-to-qa:
     name: Promote to QA and run E2E tests
     runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
+      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
     
     steps:
     - name: Checkout code
@@ -163,7 +166,7 @@ jobs:
           "test_run": {
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "workflow": "promote-to-qa",
-            "qa_version": "${{ steps.get-latest-dev-version.outputs.latest_dev_version }},
+            "qa_version": "${{ steps.get-latest-dev-version.outputs.latest_dev_version }}",
             "quote_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${{ steps.get-images.outputs.quote_image_tag }}",
             "translation_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }}",
             "environment": "qa",
