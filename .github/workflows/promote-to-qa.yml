@@ -213,7 +213,23 @@ jobs:
           echo "❌ Cypress results file not found"
           echo "🔍 Checking for any result files:"
           find e2e-tests/ -name "*results*" -type f 2>/dev/null || echo "No result files found"
-          exit 1
+          
+          # Try to extract JSON from the container logs
+          echo "🔍 Attempting to extract JSON from container logs..."
+          docker logs e2e-test-runner-qa 2>/dev/null | sed -n '/^{/,/^}/p' > cypress-results.json || echo "Failed to extract from logs"
+          
+          if [ -s "cypress-results.json" ]; then
+            echo "✅ Extracted JSON from container logs"
+            if jq empty cypress-results.json 2>/dev/null; then
+              echo "✅ Valid JSON extracted"
+            else
+              echo "❌ Invalid JSON extracted"
+              exit 1
+            fi
+          else
+            echo "❌ Could not extract JSON from logs"
+            exit 1
+          fi
         fi
         
         echo "📋 Using Cypress results for evidence creation:"
