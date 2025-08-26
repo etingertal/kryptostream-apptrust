@@ -191,7 +191,24 @@ jobs:
 
     - name: Create evidence from the e2e test results
       run: |
-        cp e2e-tests/cypress-results.json cypress-results.json
+        # Check if results file exists and validate JSON
+        if [ -f "e2e-tests/cypress-results.json" ]; then
+          echo "✅ Cypress results file found"
+          
+          # Validate the JSON
+          if jq empty e2e-tests/cypress-results.json 2>/dev/null; then
+            echo "✅ Valid JSON found"
+            cp e2e-tests/cypress-results.json cypress-results.json
+          else
+            echo "❌ Invalid JSON in results file"
+            exit 1
+          fi
+        else
+          echo "❌ Cypress results file not found"
+          exit 1
+        fi
+        
+        echo "📋 Using Cypress results for evidence creation:"
         cat cypress-results.json
         
         jf evd create --release-bundle quotopia --release-bundle-version ${{ steps.get-latest-dev-version.outputs.latest_dev_version }} \
