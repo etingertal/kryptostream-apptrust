@@ -216,7 +216,15 @@ jobs:
           
           # Try to extract JSON from the container logs
           echo "🔍 Attempting to extract JSON from container logs..."
-          docker logs e2e-test-runner-qa 2>/dev/null | sed -n '/^{/,/^}/p' > cypress-results.json || echo "Failed to extract from logs"
+          # Extract all JSON objects and combine them into a single valid JSON
+          docker logs e2e-test-runner-qa 2>/dev/null | sed -n '/^{/,/^}/p' > temp-cypress-results.json || echo "Failed to extract from logs"
+          
+          # Create a combined JSON structure
+          echo '{"runs": [' > cypress-results.json
+          # Add each JSON object as an element in the runs array
+          cat temp-cypress-results.json | sed 's/^/,/' | sed '1s/^,//' >> cypress-results.json
+          echo ']}' >> cypress-results.json
+          rm -f temp-cypress-results.json
           
           if [ -s "cypress-results.json" ]; then
             echo "✅ Extracted JSON from container logs"
