@@ -168,9 +168,17 @@ jobs:
         echo "Generated Docker Compose file:"
         cat e2e-test-compose.yml
         
-    - name: Run E2E tests
+    - name: Run E2E tests (Optimized)
       run: |
-        # Start services and run tests
+        # Start services and run tests with optimized settings
+        echo "🚀 Starting optimized E2E tests..."
+        
+        # Pull images in parallel for faster startup
+        docker pull evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${{ steps.get-images.outputs.quote_image_tag }} &
+        docker pull evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }} &
+        wait
+        
+        # Start services with optimized health checks
         docker compose -f e2e-test-compose.yml up --abort-on-container-exit
         
         # Check if tests passed
@@ -214,26 +222,24 @@ jobs:
 
     - name: Create evidence from the e2e test results
       run: |
-        # Check if results file exists and clean it for valid JSON
+        # Check if results file exists and validate JSON
         if [ -f "e2e-tests/cypress-results.json" ]; then
           echo "✅ Cypress results file found"
-          # Extract only the JSON part (between { and }) to ensure valid JSON
-          sed -n '/^{/,/^}/p' e2e-tests/cypress-results.json > clean-cypress-results.json
           
           # Validate the JSON
-          if jq empty clean-cypress-results.json 2>/dev/null; then
-            echo "✅ Valid JSON extracted"
-            cp clean-cypress-results.json cypress-results.json
+          if jq empty e2e-tests/cypress-results.json 2>/dev/null; then
+            echo "✅ Valid JSON found"
+            cp e2e-tests/cypress-results.json cypress-results.json
           else
-            echo "❌ Invalid JSON, creating empty results"
-            echo '{"runs": [{"stats": {"tests": 0, "passes": 0, "failures": 0, "duration": 0}}]}' > cypress-results.json
+            echo "❌ Invalid JSON in results file"
+            exit 1
           fi
         else
-          echo "❌ Cypress results file not found, creating empty results"
-          echo '{"runs": [{"stats": {"tests": 0, "passes": 0, "failures": 0, "duration": 0}}]}' > cypress-results.json
+          echo "❌ Cypress results file not found"
+          exit 1
         fi
         
-        echo "📋 Using cleaned JSON for evidence creation:"
+        echo "📋 Using Cypress results for evidence creation:"
         cat cypress-results.json
         
         jf evd create --release-bundle quotopia --release-bundle-version ${{ steps.get-latest-dev-version.outputs.latest_dev_version }} \
@@ -244,7 +250,7 @@ jobs:
       if: always()
       run: |
         # Clean up generated files and containers
-        rm -f e2e-test-compose.yml cypress-results.json clean-cypress-results.json
+        rm -f e2e-test-compose.yml cypress-results.json
         docker compose -f e2e-test-compose.yml down -v 2>/dev/null || true
         docker system prune -f
         
