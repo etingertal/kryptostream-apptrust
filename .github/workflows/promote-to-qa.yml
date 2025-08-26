@@ -1,17 +1,20 @@
 name: Promote to QA
 
 on:
-  push:
-    paths:
-      - '.github/workflows/promote-to-qa.yml'
   workflow_dispatch:
 
 jobs:
   promote-to-qa:
-    name: Promote Latest DEV Release Bundle to QA
+    name: Promote to QA and run E2E tests
     runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
+      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
       with:
@@ -36,22 +39,167 @@ jobs:
         echo "latest_dev_version=$LATEST_DEV_VERSION" >> $GITHUB_OUTPUT
         echo "Found latest DEV release bundle version: $LATEST_DEV_VERSION"
     
-    - name: Promote to QA
-      run: |
-        LATEST_DEV_VERSION="${{ steps.get-latest-dev-version.outputs.latest_dev_version }}"
+    # - name: Promote to QA
+    #   run: |
+    #     LATEST_DEV_VERSION="${{ steps.get-latest-dev-version.outputs.latest_dev_version }}"
         
-        echo "🚀 Promoting release bundle quotopia version $LATEST_DEV_VERSION from DEV to QA..."
+    #     echo "🚀 Promoting release bundle quotopia version $LATEST_DEV_VERSION from DEV to QA..."
         
-        # Promote the release bundle from DEV to QA
-        jf release-bundle-promote quotopia $LATEST_DEV_VERSION QA
+    #     # Promote the release bundle from DEV to QA
+    #     jf release-bundle-promote quotopia $LATEST_DEV_VERSION QA
         
-        if [ $? -eq 0 ]; then
-          echo "✅ Successfully promoted quotopia version $LATEST_DEV_VERSION to QA"
+    #     if [ $? -eq 0 ]; then
+    #       echo "✅ Successfully promoted quotopia version $LATEST_DEV_VERSION to QA"
           
-          # Create a link to the QA release bundle
-          QA_LINK="${{ vars.JF_URL }}/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=$LATEST_DEV_VERSION&repositoryKey=release-bundles-v2&activeVersionTab=Evidence%20Graph"
-          echo "🔗 QA Release Bundle: [quotopia:$LATEST_DEV_VERSION]($QA_LINK)" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Failed to promote quotopia version $LATEST_DEV_VERSION to QA"
+    #       # Create a link to the QA release bundle
+    #       QA_LINK="${{ vars.JF_URL }}/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=$LATEST_DEV_VERSION&repositoryKey=release-bundles-v2&activeKanbanTab=promotion"
+    #       echo "🥡 QA Release Bundle: [quotopia:$LATEST_DEV_VERSION]($QA_LINK)" >> $GITHUB_STEP_SUMMARY
+          
+    #       # Store the version for the E2E test job
+    #       echo "LATEST_QA_VERSION=$LATEST_DEV_VERSION" >> $GITHUB_ENV
+    #     else
+    #       echo "❌ Failed to promote quotopia version $LATEST_DEV_VERSION to QA"
+    #       exit 1
+    #     fi
+
+     
+    - name: Login to Docker Registry
+      run: |
+        echo "🔐 Logging into JFrog Artifactory Docker registry..."
+        echo "Registry: ${{ vars.JF_URL }}"
+        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ vars.JF_URL }}
+        echo "✅ Successfully logged into Docker registry"
+        
+    - name: Get Docker images from QA repository
+      id: get-images
+      run: |
+        # Get the latest QA version
+        LATEST_QA_VERSION="${{ env.LATEST_QA_VERSION }}"
+        echo "Testing with QA version: $LATEST_QA_VERSION"
+        
+        # Get Docker image tags from QA repository using AQL with better error handling
+        echo "🔍 Searching for quote service images..."
+        QUOTE_RESPONSE=$(curl -s -X POST \
+          -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+          -H "Content-Type: text/plain" \
+          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+            "${{ vars.JF_URL }}/artifactory/api/search/aql")
+        
+        echo "Quote API Response: $QUOTE_RESPONSE"
+        
+        if [ -z "$QUOTE_RESPONSE" ] || [ "$QUOTE_RESPONSE" = "null" ]; then
+          echo "❌ No quote service images found in QA repository"
           exit 1
         fi
+        
+        QUOTE_IMAGE_TAG=$(echo "$QUOTE_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')
+        
+        if [ -z "$QUOTE_IMAGE_TAG" ]; then
+          echo "❌ Failed to extract quote image tag from response"
+          echo "Response: $QUOTE_RESPONSE"
+          exit 1
+        fi
+        
+        echo "✅ Found quote service image tag: $QUOTE_IMAGE_TAG"
+        
+        echo "🔍 Searching for translation service images..."
+        TRANSLATION_RESPONSE=$(curl -s -X POST \
+          -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+          -H "Content-Type: text/plain" \
+          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "ai-translate/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+            "${{ vars.JF_URL }}/artifactory/api/search/aql")
+        
+        echo "Translation API Response: $TRANSLATION_RESPONSE"
+        
+        if [ -z "$TRANSLATION_RESPONSE" ] || [ "$TRANSLATION_RESPONSE" = "null" ]; then
+          echo "❌ No translation service images found in QA repository"
+          exit 1
+        fi
+        
+        TRANSLATION_IMAGE_TAG=$(echo "$TRANSLATION_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')
+        
+        if [ -z "$TRANSLATION_IMAGE_TAG" ]; then
+          echo "❌ Failed to extract translation image tag from response"
+          echo "Response: $TRANSLATION_RESPONSE"
+          exit 1
+        fi
+        
+        echo "✅ Found translation service image tag: $TRANSLATION_IMAGE_TAG"
+
+        echo "quote_image_tag=$QUOTE_IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "translation_image_tag=$TRANSLATION_IMAGE_TAG" >> $GITHUB_OUTPUT
+        
+        echo "Quote service image: evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:$QUOTE_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+        echo "Translation service image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:$TRANSLATION_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Generate E2E test Docker Compose file
+      run: |
+        # Set environment variables for template substitution
+        export QUOTE_IMAGE_TAG="${{ steps.get-images.outputs.quote_image_tag }}"
+        export TRANSLATION_IMAGE_TAG="${{ steps.get-images.outputs.translation_image_tag }}"
+        
+        # Substitute variables in the template
+        envsubst < e2e-tests/docker-compose.yml.template > e2e-test-compose.yml
+        
+        # Display the generated file for debugging
+        echo "Generated Docker Compose file:"
+        cat e2e-test-compose.yml
+        
+    - name: Run E2E tests
+      run: |
+        # Start services and run tests
+        docker compose -f e2e-test-compose.yml up --abort-on-container-exit
+        
+        # Check if tests passed
+        if [ $? -eq 0 ]; then
+          echo "✅ E2E tests completed successfully"
+        else
+          echo "❌ E2E tests failed"
+          exit 1
+        fi
+        
+    - name: Generate test results JSON
+      run: |
+        # Create comprehensive test results JSON
+        cat > e2e-test-results.json << EOF
+        {
+          "test_run": {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "workflow": "promote-to-qa",
+            "qa_version": "${{ steps.get-latest-dev-version.outputs.latest_dev_version }}",
+            "quote_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${{ steps.get-images.outputs.quote_image_tag }}",
+            "translation_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }}",
+            "environment": "qa",
+            "status": "$(if [ -f e2e-tests/test-results.json ]; then echo 'completed'; else echo 'failed'; fi)"
+          },
+          "services": {
+            "quote_service": {
+              "status": "$(docker inspect quote-service-qa --format='{{.State.Status}}' 2>/dev/null || echo 'unknown')",
+              "health": "$(curl -s http://localhost:8080/actuator/health | jq -r '.status' 2>/dev/null || echo 'unknown')"
+            },
+            "translation_service": {
+              "status": "$(docker inspect translation-service-qa --format='{{.State.Status}}' 2>/dev/null || echo 'unknown')",
+              "health": "$(curl -s http://localhost:8000/health | jq -r '.status' 2>/dev/null || echo 'unknown')"
+            }
+          },
+          "test_results": $(cat e2e-tests/test-results.json 2>/dev/null || echo '{"summary": {"total": 0, "passed": 0, "failed": 0}}')
+        }
+        EOF
+        
+        echo "📊 Test results saved to e2e-test-results.json"
+        cat e2e-test-results.json | jq .
+
+    - name: Create evidence from the e2e test results
+      run: |
+        jf evd create --release-bundle quotopia --release-bundle-version ${{ steps.get-latest-dev-version.outputs.latest_dev_version }} \
+          --predicate e2e-test-results.json --provider-id jfrog --predicate-type https://jfrog.com/evidence/e2e-test/v1
+          
+
+    - name: Cleanup
+      if: always()
+      run: |
+        # Clean up generated files and containers
+        rm -f e2e-test-compose.yml
+        docker compose -f e2e-test-compose.yml down -v 2>/dev/null || true
+        docker system prune -f
+        

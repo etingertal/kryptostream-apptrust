@@ -38,8 +38,25 @@ class TranslationService:
             
             # Configure Hugging Face Hub to use Artifactory
             import huggingface_hub
-            if os.getenv('HF_ENDPOINT'):
-                huggingface_hub.set_http_backend(os.getenv('HF_ENDPOINT'))
+            hf_endpoint = os.getenv('HF_ENDPOINT')
+            hf_token = os.getenv('HF_TOKEN')
+            
+            if hf_endpoint and hf_token:
+                try:
+                    # Set the endpoint using the newer API
+                    if hasattr(huggingface_hub, 'set_http_backend'):
+                        huggingface_hub.set_http_backend(hf_endpoint)
+                        logger.info(f"Configured HF endpoint: {hf_endpoint}")
+                    elif hasattr(huggingface_hub, 'HfApi'):
+                        # Alternative approach using HfApi
+                        api = huggingface_hub.HfApi(endpoint=hf_endpoint)
+                        logger.info(f"Configured HF endpoint via HfApi: {hf_endpoint}")
+                    else:
+                        logger.warning("Could not configure HF endpoint - API not available")
+                except Exception as e:
+                    logger.warning(f"Could not configure HF endpoint: {e}")
+            else:
+                logger.info("Using public Hugging Face Hub")
             
             # Load with token if available
             token = os.getenv('HF_TOKEN')

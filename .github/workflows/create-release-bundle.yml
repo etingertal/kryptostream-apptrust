@@ -1,9 +1,6 @@
 name: Create Release Bundle
 
 on:
-  push:
-    paths:
-      - '.github/workflows/create-release-bundle.yml'
   workflow_dispatch:
 
 jobs:
@@ -113,5 +110,6 @@ jobs:
         VER_LINK=${{ vars.JF_URL }}'/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=${{ github.run_number }}&repositoryKey=release-bundles-v2&activeVersionTab=Evidence%20Graph'
         echo '📦 Release bundle [quotopia:${{ github.run_number }}]('${VER_LINK}') created' >> $GITHUB_STEP_SUMMARY
 
+        VER_LINK=${{ vars.JF_URL }}'/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=${{ github.run_number }}&repositoryKey=release-bundles-v2&activeKanbanTab=promotion'
         jf release-bundle-promote quotopia ${{ github.run_number }} DEV
         echo '🚀 Release bundle [quotopia:${{ github.run_number }}]('${VER_LINK}') promoted to DEV' >> $GITHUB_STEP_SUMMARY

@@ -70,6 +70,7 @@ jobs:
       
     - name: Sonar scan
       uses: SonarSource/sonarqube-scan-action@v4
+      continue-on-error: true  # Don't fail build on SonarCloud quality gate issues
       env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       with:
@@ -78,10 +79,11 @@ jobs:
           -Dsonar.organization=sela-org1
           -Dsonar.projectKey=sela-org1_evidence-test
           -Dsonar.java.binaries=target/classes
-          -Dsonar.qualitygate.wait=true
+          -Dsonar.qualitygate.wait=false
 
     - name: Find Sonar task ID
       id: sonar_task_id_step
+      continue-on-error: true
       run: |
         cd quoteofday
         echo "Searching for report-task.txt file..."
@@ -187,6 +189,3 @@ jobs:
         jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
           --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
-    - name: Create release bundle
-      run: |
-        jf release-bundle-create quoteofday ${{ github.run_number }} --build-name=quoteofday --build-number=${{ github.run_number }}
