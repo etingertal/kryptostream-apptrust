@@ -7,8 +7,8 @@ echo "🚀 Starting E2E test setup..."
 echo "📦 Installing npm dependencies..."
 npm ci --cache /root/.npm --prefer-offline
 
-# Run tests with quiet output to ensure clean JSON
+# Run tests to generate JSON results
 echo "🧪 Running Cypress tests..."
-npm run test -- --quiet
+npm run test
 
 echo "✅ E2E tests completed"
