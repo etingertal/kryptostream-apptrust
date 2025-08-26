@@ -7,6 +7,10 @@ module.exports = defineConfig({
     specPattern: 'cypress/e2e/**/*.cy.js',
     video: false,
     screenshotOnRunFailure: false,
+    reporter: 'json',
+    reporterOptions: {
+      outputFile: 'cypress-results.json'
+    },
     env: {
       quoteServiceUrl: 'http://quote-service:8080',
       translationServiceUrl: 'http://translation-service:8000'
