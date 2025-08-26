@@ -9,6 +9,6 @@ npm ci --cache /root/.npm --prefer-offline
 
 # Run tests to generate JSON results
 echo "🧪 Running Cypress tests..."
-npm run test
+npm run test > cypress-results.json
 
 echo "✅ E2E tests completed"
