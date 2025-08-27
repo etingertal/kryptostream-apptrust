@@ -1,85 +1,57 @@
 version: '3.8'
 
 services:
-  # Java Quote of Day Service
   quote-service:
-    build:
-      context: ../quoteofday
-      dockerfile: Dockerfile
-      args:
-        - JAVA_VERSION=21
-    container_name: quote-of-day-service
+    image: evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:121
+    container_name: quote-service-qa
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=local
-      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=qa
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
-    networks:
-      - e2e-network
-    depends_on:
-      - translation-service
-
-  # Python Translation Service
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/quotes/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+      
   translation-service:
-    build:
-      context: ../translate
-      dockerfile: Dockerfile
-      args:
-        - HF_HUB_ETAG_TIMEOUT=${HF_HUB_ETAG_TIMEOUT}
-        - HF_HUB_DOWNLOAD_TIMEOUT=${HF_HUB_DOWNLOAD_TIMEOUT}
-        - HF_ENDPOINT=${HF_ENDPOINT}
-        - HF_TOKEN=${HF_TOKEN}
-    container_name: ai-translation-service
+    image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:38
+    container_name: translation-service-qa
     ports:
       - "8000:8000"
-    environment:
-      - TRANSFORMERS_CACHE=/app/models
-      - HF_HOME=/app/models
-      - HF_HUB_ETAG_TIMEOUT=${HF_HUB_ETAG_TIMEOUT}
-      - HF_HUB_DOWNLOAD_TIMEOUT=${HF_HUB_DOWNLOAD_TIMEOUT}
-      - HF_ENDPOINT=${HF_ENDPOINT}
-      - HF_TOKEN=${HF_TOKEN}
     volumes:
       - model-cache:/app/models
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    networks:
-      - e2e-network
-
-  # End-to-End Test Service
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      
   e2e-tests:
-    build:
-      context: ..
-      dockerfile: local-run/Dockerfile.e2e
-    container_name: e2e-test-runner
-    environment:
-      - QUOTE_SERVICE_URL=http://quote-service:8080
-      - TRANSLATION_SERVICE_URL=http://translation-service:8000
-      - TEST_TIMEOUT=300
+    image: cypress/included:13.6.0
+    container_name: e2e-test-runner-qa
     depends_on:
       quote-service:
         condition: service_healthy
       translation-service:
         condition: service_healthy
-    networks:
-      - e2e-network
-    profiles:
-      - e2e-test
-
+    environment:
+      - QUOTE_SERVICE_URL=http://quote-service:8080
+      - TRANSLATION_SERVICE_URL=http://translation-service:8000
+    volumes:
+      - .:/app/tests
+      - npm-cache:/root/.npm
+      - cypress-cache:/root/.cache/Cypress
+    working_dir: /app/tests
+    command: ./run-cypress.sh
+      
 volumes:
   model-cache:
-    driver: local
-
+  npm-cache:
+  cypress-cache:
+    
 networks:
-  e2e-network:
-    driver: bridge
+  default:
+    name: e2e-test-network
