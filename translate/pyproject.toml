@@ -44,26 +44,37 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6.0",
-    "pytest-asyncio>=0.18.0",
-    "black>=21.0",
-    "flake8>=3.8",
-    "mypy>=0.800",
-    "build>=0.10.0",
-    "twine>=4.0.0",
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "httpx>=0.24.1",
 ]
 
 [project.scripts]
 translation-service = "simple_app:main"
 
 [project.urls]
-Homepage = "https://github.com/jfrog/evidence-demo"
-Repository = "https://github.com/jfrog/evidence-demo"
-Documentation = "https://github.com/jfrog/evidence-demo#readme"
-Issues = "https://github.com/jfrog/evidence-demo/issues"
+Homepage = "https://github.com/jfrog/evidence-integration"
+Repository = "https://github.com/jfrog/evidence-integration"
+Documentation = "https://github.com/jfrog/evidence-integration/blob/main/translate/README.md"
+Issues = "https://github.com/jfrog/evidence-integration/issues"
 
 [tool.setuptools_scm]
-write_to = "simple_app/_version.py"
+write_to = "translation_service/_version.py"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["translation_service*"]
+
+# Security: Pin vulnerable dependencies to secure versions
+[tool.setuptools.dynamic]
+version = {attr = "translation_service._version.__version__"}
+
+# Security constraints to fix known vulnerabilities
+[tool.setuptools.dynamic.dependencies]
+# CVE-2025-47273: setuptools path traversal vulnerability
+setuptools = ">=78.1.1"
+# CVE-2025-43859: h11 request smuggling vulnerability
+h11 = "==0.16.0"
 
 [tool.black]
 line-length = 88
