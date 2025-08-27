@@ -189,6 +189,56 @@ jobs:
           exit 1
         fi
 
+    - name: Convert Cypress results to Markdown
+      run: |
+        echo "📄 Converting Cypress results to Markdown report..."
+        
+        # Check if Cypress results file exists
+        if [ -f "e2e-tests/cypress-results.json" ]; then
+          echo "✅ Found Cypress results file"
+          
+          # Navigate to e2e-tests directory and run conversion
+          cd e2e-tests
+          
+          # Run the conversion script
+          if ./convert-cypress-report.sh cypress-results.json cypress-report.md; then
+            echo "✅ Markdown report generated successfully"
+            
+            # Copy the report to the workspace root for easy access
+            cp cypress-report.md ../cypress-e2e-report.md
+            
+            # Display report summary
+            echo "📊 Report Summary:"
+            head -20 cypress-report.md
+            
+            # Upload the markdown report as an artifact
+            echo "📤 Markdown report saved as: cypress-e2e-report.md"
+          else
+            echo "❌ Failed to generate markdown report"
+            exit 1
+          fi
+        else
+          echo "⚠️  No Cypress results file found, skipping markdown conversion"
+          # Create a simple markdown report indicating no results
+          echo "# Cypress E2E Test Report" > cypress-e2e-report.md
+          echo "" >> cypress-e2e-report.md
+          echo "## 📊 Test Summary" >> cypress-e2e-report.md
+          echo "" >> cypress-e2e-report.md
+          echo "No test results were found. This could indicate:" >> cypress-e2e-report.md
+          echo "- Tests did not run" >> cypress-e2e-report.md
+          echo "- Results file was not generated" >> cypress-e2e-report.md
+          echo "- Results file is in a different location" >> cypress-e2e-report.md
+          echo "" >> cypress-e2e-report.md
+          echo "## 📈 Test Results Overview" >> cypress-e2e-report.md
+          echo "" >> cypress-e2e-report.md
+          echo "**Status:** ⚠️ No Results Available" >> cypress-e2e-report.md
+          echo "" >> cypress-e2e-report.md
+          echo "---" >> cypress-e2e-report.md
+          echo "" >> cypress-e2e-report.md
+          echo "*Report generated on $(date)*" >> cypress-e2e-report.md
+          echo "📄 Created placeholder markdown report"
+        fi
+
     - name: Create evidence from the e2e test results
       run: |
         # Debug: Check what files exist in e2e-tests directory
@@ -236,8 +286,17 @@ jobs:
         cat cypress-results.json
         
         jf evd create --release-bundle quotopia --release-bundle-version ${{ steps.get-latest-dev-version.outputs.latest_dev_version }} \
-          --predicate cypress-results.json --provider-id cypress --predicate-type https://cypress.io/evidence/e2e/v1
+          --predicate cypress-results.json --markdown cypress-e2e-report.md --provider-id cypress --predicate-type https://cypress.io/evidence/e2e/v1
           
+
+    - name: Upload Cypress Markdown Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: cypress-e2e-report
+        path: cypress-e2e-report.md
+        retention-days: 30
+        if-no-files-found: warn
 
     - name: Cleanup
       if: always()

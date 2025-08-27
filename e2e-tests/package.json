@@ -6,8 +6,10 @@
     "cypress:run": "cypress run",
     "cypress:open": "cypress open",
     "test": "cypress run --spec 'cypress/e2e/**/*.cy.js'",
-    "test:fast": "cypress run --reporter json --reporter-options outputFile=cypress-results.json --spec 'cypress/e2e/**/*.cy.js' --headless --no-video --no-screenshot",
-    "convert-results": "node convert-cypress-results.js"
+    "test:fast": "cypress run --reporter json --reporter-options outputFile=cypress-results.json --spec 'cypress/e2e/**/*.cy.js' --headless",
+    "convert-results": "node convert-cypress-results.js",
+    "convert-to-markdown": "./convert-cypress-report.sh",
+    "test-and-report": "npm run test:fast && npm run convert-to-markdown"
   },
   "devDependencies": {
     "cypress": "^13.6.0"
