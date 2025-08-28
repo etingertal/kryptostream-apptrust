@@ -45,7 +45,7 @@ services:
       - npm-cache:/root/.npm
       - cypress-cache:/root/.cache/Cypress
     working_dir: /app/tests
-    command: ["sh", "-c", "npm ci && npx cypress run --config-file cypress.config.docker.js"]
+    command: ./run-cypress-docker.sh
       
 volumes:
   model-cache:
