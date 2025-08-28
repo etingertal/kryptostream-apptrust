@@ -55,3 +55,14 @@ jobs:
           echo "❌ Failed to release quotopia version $LATEST_QA_VERSION to PROD"
           exit 1
         fi
+    
+    - name: Notify Kargo to Deploy
+      run: |
+        RELEASED_VERSION="${{ steps.get-latest-qa-version.outputs.latest_qa_version }}"
+        mkdir -p kargo
+        echo "$RELEASED_VERSION" > kargo/released_version
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add kargo/release_version
+        git commit -m "Update kargo/release_version to $RELEASED_VERSION"
+        git push
