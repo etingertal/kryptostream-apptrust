@@ -28,7 +28,7 @@ spec:
                 name: app_id
               - fromExpression: .app_ver
                 name: app_ver
-            path: kargo/release_version
+            path: ./kargo/release_version
           continueOnError: false
           if: ""
           uses: json-parse
@@ -53,6 +53,18 @@ spec:
           continueOnError: false
           if: ""
           uses: http
+        - uses: yaml-update
+          config:
+            path: ./argocd/manifests/deployment-${{ outputs.build_details.build1_name }}.yaml
+            updates:
+              key: spec.template.spec.containers.image
+              value: evidencetrial.jfrog.io/commons-dev-docker-local/${{ outputs.build_details.build1_name }}:${{ outputs.build_details.build1_number }}
+        - uses: yaml-update
+          config:
+            path: ./argocd/manifests/deployment-${{ outputs.build_details.build2_name }}.yaml
+            updates:
+              key: spec.template.spec.containers.image
+              value: evidencetrial.jfrog.io/commons-dev-docker-local/${{ outputs.build_details.build2_name }}:${{ outputs.build_details.build2_number }}
   requestedFreight:
     - origin:
         kind: Warehouse
