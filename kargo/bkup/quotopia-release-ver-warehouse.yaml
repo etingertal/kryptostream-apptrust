@@ -1,0 +1,27 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  annotations:
+    bla1: bla1
+    kargo.akuity.io/re-sync: "1756391888"
+    kargo.akuity.io/refresh: 2025-08-28T14:42:10Z
+  creationTimestamp: 2025-08-28T09:26:50Z
+  generation: 5
+  name: quotopia-release-ver-warehouse
+  namespace: swampup-2025-evidence-demo
+  resourceVersion: "207896"
+  uid: 651e977e-5a41-4f65-8ce4-3e65571cc62f
+spec:
+  freightCreationPolicy: Automatic
+  interval: 1m0s
+  subscriptions:
+    - git:
+        branch: feature/RTDEV-62079-kargo
+        commitSelectionStrategy: NewestFromBranch
+        discoveryLimit: 20
+        includePaths:
+          - kargo/release_version
+        repoURL: https://github.com/jfrog/evidence-integration
+        strictSemvers: true
+
+
