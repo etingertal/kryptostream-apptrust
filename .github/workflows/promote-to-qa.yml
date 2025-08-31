@@ -67,7 +67,7 @@ jobs:
         else
           echo "❌ Failed to promote quotopia version $LATEST_DEV_VERSION to QA"
           exit 1
-                fi
+        fi
 
     - name: Set QA version (when promotion is skipped)
       if: ${{ inputs.promote_to_qa != 'true' }}
@@ -170,15 +170,15 @@ jobs:
         
     - name: Run E2E tests 
       run: |
-        # Start services and run tests with optimized settings
-        echo "🚀 Starting optimized E2E tests..."
+        # Start services and run tests
+        echo "🚀 Starting E2E tests..."
         
         # Pull images in parallel for faster startup
         docker pull evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${{ steps.get-images.outputs.quote_image_tag }} &
         docker pull evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }} &
         wait
         
-        # Start services with optimized health checks
+        # Start services and run tests
         docker compose -f e2e-test-compose.yml up --abort-on-container-exit
         
         # Check if tests passed
@@ -189,153 +189,64 @@ jobs:
           exit 1
         fi
         
-    - uses: mxschmitt/action-tmate@v3
-    
-    - name: Convert Cypress results to Markdown
+    - name: Generate test reports
       run: |
-        echo "📄 Converting Cypress results to Markdown report..."
+        echo "📄 Generating test reports..."
         
-        # Debug: Check what files exist in e2e-tests directory
-        echo "🔍 Checking e2e-tests directory contents:"
-        ls -la e2e-tests/
+        # Navigate to e2e-tests directory
+        cd e2e-tests
         
-        # Check if mochawesome combined report exists
-        if [ -f "e2e-tests/cypress/results/combined-report.json" ]; then
-          echo "✅ Found mochawesome combined report"
-          
-          # Show file size and first few lines for debugging
-          echo "📊 Combined report size: $(wc -c < e2e-tests/cypress/results/combined-report.json) bytes"
-          echo "📋 First 10 lines of combined report:"
-          head -10 e2e-tests/cypress/results/combined-report.json
-          
-          # Navigate to e2e-tests directory and run conversion
-          cd e2e-tests
-          
-          # Run the conversion script with the combined report
-          if ./convert-cypress-report.sh cypress/results/combined-report.json cypress-report.md; then
-            echo "✅ Markdown report generated successfully"
-            
-            # Copy the report to the workspace root for easy access
-            cp cypress-report.md ../cypress-e2e-report.md
-            
-            # Display report summary
-            echo "📊 Report Summary:"
-            head -20 cypress-report.md
-            
-            # Upload the markdown report as an artifact
-            echo "📤 Markdown report saved as: cypress-e2e-report.md"
-          else
-            echo "❌ Failed to generate markdown report"
-            exit 1
-          fi
-        else
-          echo "⚠️  No mochawesome combined report found, checking for individual reports..."
-          echo "🔍 Checking for any result files:"
-          find e2e-tests/ -name "*results*" -type f 2>/dev/null || echo "No result files found"
-          
-          # Try to merge individual mochawesome reports if they exist
-          if [ -d "e2e-tests/cypress/results/mochawesome" ] && [ "$(ls -A e2e-tests/cypress/results/mochawesome)" ]; then
-            echo "🔄 Found individual mochawesome reports, merging them..."
-            cd e2e-tests
-            npx mochawesome-merge cypress/results/mochawesome/*.json > cypress/results/combined-report.json
-            
-            if [ -f "cypress/results/combined-report.json" ]; then
-              echo "✅ Successfully merged individual reports"
-              
-              # Run the conversion script with the newly merged report
-              if ./convert-cypress-report.sh cypress/results/combined-report.json cypress-report.md; then
-                echo "✅ Markdown report generated successfully"
-                cp cypress-report.md ../cypress-e2e-report.md
-                echo "📤 Markdown report saved as: cypress-e2e-report.md"
-              else
-                echo "❌ Failed to generate markdown report"
-                exit 1
-              fi
-            else
-              echo "❌ Failed to merge individual reports"
-              exit 1
-            fi
-          else
-            # Create a simple markdown report indicating no results
-            echo "# Cypress E2E Test Report" > cypress-e2e-report.md
-            echo "" >> cypress-e2e-report.md
-            echo "## 📊 Test Summary" >> cypress-e2e-report.md
-            echo "" >> cypress-e2e-report.md
-            echo "No test results were found. This could indicate:" >> cypress-e2e-report.md
-            echo "- Tests did not run" >> cypress-e2e-report.md
-            echo "- Results file was not generated" >> cypress-e2e-report.md
-            echo "- Results file is in a different location" >> cypress-e2e-report.md
-            echo "" >> cypress-e2e-report.md
-            echo "## 📈 Test Results Overview" >> cypress-e2e-report.md
-            echo "" >> cypress-e2e-report.md
-            echo "**Status:** ⚠️ No Results Available" >> cypress-e2e-report.md
-            echo "" >> cypress-e2e-report.md
-            echo "---" >> cypress-e2e-report.md
-            echo "" >> cypress-e2e-report.md
-            echo "*Report generated on $(date)*" >> cypress-e2e-report.md
-            echo "📄 Created placeholder markdown report"
-          fi
+        # Check if mochawesome results exist
+        if [ ! -d "cypress/results/mochawesome" ] || [ -z "$(ls -A cypress/results/mochawesome/*.json 2>/dev/null)" ]; then
+          echo "❌ No mochawesome results found"
+          exit 1
         fi
+        
+        echo "✅ Found mochawesome results"
+        
+        # Merge JSON reports (same as local flow)
+        echo "🔄 Merging JSON reports..."
+        npx mochawesome-merge cypress/results/mochawesome/*.json > cypress/results/combined-report.json
+        
+        if [ ! -f "cypress/results/combined-report.json" ]; then
+          echo "❌ Failed to create combined report"
+          exit 1
+        fi
+        
+        echo "✅ Combined report created: $(wc -c < cypress/results/combined-report.json) bytes"
+        
+        # Convert to markdown (same as local flow)
+        echo "🔄 Converting to markdown..."
+        ./convert-cypress-report.sh cypress/results/combined-report.json cypress-report.md
+        
+        if [ ! -f "cypress-report.md" ]; then
+          echo "❌ Failed to create markdown report"
+          exit 1
+        fi
+        
+        echo "✅ Markdown report created: $(wc -c < cypress-report.md) bytes"
+        
+        # Copy reports to workspace root for easy access
+        cp cypress/results/combined-report.json ../cypress-results.json
+        cp cypress-report.md ../cypress-e2e-report.md
+        
+        echo "📊 Report Summary:"
+        head -20 cypress-report.md
 
     - name: Create evidence from the e2e test results
       run: |
-        # Debug: Check what files exist in e2e-tests directory
-        echo "🔍 Checking e2e-tests directory contents:"
-        ls -la e2e-tests/
+        echo "📋 Creating evidence from test results..."
         
-        # Check if mochawesome combined report exists and validate JSON
-        if [ -f "e2e-tests/cypress/results/combined-report.json" ]; then
-          echo "✅ Mochawesome combined report found"
-          
-          # Validate the JSON
-          if jq empty e2e-tests/cypress/results/combined-report.json 2>/dev/null; then
-            echo "✅ Valid JSON found"
-            cp e2e-tests/cypress/results/combined-report.json cypress-results.json
-          else
-            echo "❌ Invalid JSON in combined report"
-            echo "📋 File contents:"
-            cat e2e-tests/cypress/results/combined-report.json
-            exit 1
-          fi
-        else
-          echo "❌ Mochawesome combined report not found"
-          echo "🔍 Checking for any result files:"
-          find e2e-tests/ -name "*results*" -type f 2>/dev/null || echo "No result files found"
-          
-          # Try to merge individual mochawesome reports if they exist
-          if [ -d "e2e-tests/cypress/results/mochawesome" ] && [ "$(ls -A e2e-tests/cypress/results/mochawesome)" ]; then
-            echo "🔄 Found individual mochawesome reports, merging them..."
-            cd e2e-tests
-            npx mochawesome-merge cypress/results/mochawesome/*.json > cypress/results/combined-report.json
-            
-            if [ -f "cypress/results/combined-report.json" ]; then
-              echo "✅ Successfully merged individual reports"
-              cd ..
-              
-              # Validate the merged JSON
-              if jq empty e2e-tests/cypress/results/combined-report.json 2>/dev/null; then
-                echo "✅ Valid JSON created from merged reports"
-                cp e2e-tests/cypress/results/combined-report.json cypress-results.json
-              else
-                echo "❌ Invalid JSON in merged report"
-                exit 1
-              fi
-            else
-              echo "❌ Failed to merge individual reports"
-              exit 1
-            fi
-          else
-            echo "❌ No mochawesome reports found"
-            exit 1
-          fi
+        # Validate JSON before creating evidence
+        if ! jq empty cypress-results.json 2>/dev/null; then
+          echo "❌ Invalid JSON in cypress-results.json"
+          exit 1
         fi
         
-        echo "📋 Using mochawesome combined report for evidence creation:"
-        cat cypress-results.json
+        echo "✅ Valid JSON confirmed"
         
         jf evd create --release-bundle quotopia --release-bundle-version ${{ steps.get-latest-dev-version.outputs.latest_dev_version }} \
           --predicate cypress-results.json --markdown cypress-e2e-report.md --provider-id cypress --predicate-type https://cypress.io/evidence/e2e/v1
-          
 
     - name: Upload Cypress Markdown Report
       uses: actions/upload-artifact@v4
@@ -344,14 +255,13 @@ jobs:
         name: cypress-e2e-report
         path: cypress-e2e-report.md
         retention-days: 30
-        if-no-files-found: warn
+        if-no-files-found: error
 
     - name: Cleanup
       if: always()
       run: |
         # Clean up generated files and containers
-        rm -f e2e-test-compose.yml cypress-results.json
-        rm -rf e2e-tests/cypress/results/ 2>/dev/null || true
+        rm -f e2e-test-compose.yml cypress-results.json cypress-e2e-report.md
         docker compose -f e2e-test-compose.yml down -v 2>/dev/null || true
         docker system prune -f
         
