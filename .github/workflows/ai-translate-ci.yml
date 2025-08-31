@@ -87,7 +87,7 @@ jobs:
       run: |
         cd translate
         # Build single platform AMD64 image
-        jf docker buildx build --platform linux/amd64 \
+        jf docker buildx build --platform linux/amd64,linux/arm64 \
           --cache-from type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache \
           --cache-to type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache,mode=max \
           --build-arg HF_HUB_ETAG_TIMEOUT=${{ env.HF_HUB_ETAG_TIMEOUT }} \
