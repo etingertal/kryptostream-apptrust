@@ -5,6 +5,7 @@ metadata:
   labels:
     app: quoteofday
 spec:
+  revisionHistoryLimit: 1
   replicas: 1
   selector:
     matchLabels:

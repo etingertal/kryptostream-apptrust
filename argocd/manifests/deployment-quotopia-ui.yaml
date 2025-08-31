@@ -5,6 +5,7 @@ metadata:
   labels:
     app: quotopia-ui
 spec:
+  revisionHistoryLimit: 1
   replicas: 1
   selector:
     matchLabels:
