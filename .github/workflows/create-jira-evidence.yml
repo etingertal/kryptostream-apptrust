@@ -9,10 +9,6 @@ on:
       build_number:
         description: "Build number for the evidence"
         required: true
-      fetch_depth:
-        description: "Number of previous commits to fetch (default is 10)"
-        required: false
-        default: "10"
 
 jobs:
   create-jira-evidence:
@@ -30,8 +26,6 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: ${{ github.event.inputs.fetch_depth }}
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -42,28 +36,45 @@ jobs:
           chmod +x build.sh
           ./build.sh
           cd -
-      - name: Fetch build info and extract VCS revision
+      - name: Fetch build info and extract JIRA IDs from VCS message
         id: build_info
         run: |
           echo "Fetching build info for ${{ github.event.inputs.build_name }} ${{ github.event.inputs.build_number }}..."
           
-          # Fetch build info using JFrog CLI
-          VCS_REVISION=$(jf rt curl -X GET "/api/build/${{ github.event.inputs.build_name }}/${{ github.event.inputs.build_number }}" -s | jq -r '.buildInfo.vcs[0].revision // empty')
+          # Fetch build info using JFrog CLI and extract VCS message
+          BUILD_INFO=$(jf rt curl -X GET "/api/build/${{ github.event.inputs.build_name }}/${{ github.event.inputs.build_number }}" -s)
+          VCS_MESSAGE=$(echo "$BUILD_INFO" | jq -r '.buildInfo.vcs[0].message // empty')
           
-          if [ -z "$VCS_REVISION" ]; then
-            echo "Error: Could not extract VCS revision from build info"
+          if [ -z "$VCS_MESSAGE" ]; then
+            echo "Error: Could not extract VCS message from build info"
             echo "Attempting to fetch full build info for debugging..."
-            jf rt curl -X GET "/api/build/${{ github.event.inputs.build_name }}/${{ github.event.inputs.build_number }}" -s | jq '.'
+            echo "$BUILD_INFO" | jq '.'
             exit 1
           fi
           
-          echo "Found VCS revision: $VCS_REVISION"
-          echo "vcs_revision=$VCS_REVISION" >> $GITHUB_OUTPUT
+          echo "Found VCS message: $VCS_MESSAGE"
+          
+          # Extract JIRA IDs from the VCS message using the regex pattern
+          # Using grep with -o to output only matching parts and -E for extended regex
+          JIRA_IDS=$(echo "$VCS_MESSAGE" | grep -oE "${{ env.JIRA_ID_REGEX }}" | tr '\n' ' ' | xargs)
+          
+          if [ -z "$JIRA_IDS" ]; then
+            echo "Warning: No JIRA IDs found in VCS message"
+            echo "jira_ids=" >> $GITHUB_OUTPUT
+          else
+            echo "Found JIRA IDs: $JIRA_IDS"
+            echo "jira_ids=$JIRA_IDS" >> $GITHUB_OUTPUT
+          fi
       - name: Fetch details from jira
         run: | 
           cd jira/helper
-          echo "Processing JIRA details for commit: ${{ steps.build_info.outputs.vcs_revision }}"
-          ./main "${{ steps.build_info.outputs.vcs_revision }}"
+          if [ -n "${{ steps.build_info.outputs.jira_ids }}" ]; then
+            echo "Processing JIRA IDs: ${{ steps.build_info.outputs.jira_ids }}"
+            ./main ${{ steps.build_info.outputs.jira_ids }}
+          else
+            echo "No JIRA IDs to process"
+            echo '{"tasks": []}' > transformed_jira_data.json
+          fi
           cd -
 
 

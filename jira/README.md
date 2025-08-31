@@ -1,17 +1,18 @@
 # **Jira Ticket Tracking Evidence Example**
 
-This repository provides a working example of a GitHub Actions workflow that automates Jira ticket tracking and validation. It extracts Jira ticket IDs from git commit messages, validates their existence and workflow transitions, and attaches the resulting ticket summary as signed, verifiable evidence to the package in **JFrog Artifactory**.
+This repository provides a working example of a GitHub Actions workflow that automates Jira ticket tracking and validation. It extracts Jira ticket IDs from VCS messages stored in build info, validates their existence and workflow transitions, and attaches the resulting ticket summary as signed, verifiable evidence to the package in **JFrog Artifactory**.
 
 This workflow is an essential pattern for DevSecOps and project management, creating a traceable, compliant, and auditable software development process that links code changes to Jira tickets.
 
 ## **Key Features**
 
-* **Automated Jira ID Extraction**: Extracts Jira ticket IDs from git commit messages using configurable regex patterns.
+* **Automated Jira ID Extraction**: Extracts Jira ticket IDs directly from VCS messages in build info using configurable regex patterns.
 * **Ticket Validation**: Validates that extracted Jira tickets exist and retrieves their current status and metadata.
 * **Workflow Transition Tracking**: Captures the complete workflow history and transitions for each ticket.
 * **Evidence Generation**: Creates a jira-results.json predicate file with comprehensive ticket information.
 * **Signed Evidence Attachment**: Attaches the ticket tracking results to the corresponding package version in Artifactory using `jf evd create`, cryptographically signing it for integrity.
 * **Consolidated Tool**: All functionality is now consolidated into a single Go application for simplicity and maintainability.
+* **No Git Dependencies**: Extracts JIRA IDs directly from build info, eliminating the need for git operations or repository history.
 
 ## **Workflow Overview**
 
@@ -23,8 +24,8 @@ graph TD
     B --> C[Checkout Repository]
     C --> D[Build JIRA Helper Binary]
     D --> E[Fetch Build Info from Artifactory]
-    E --> F[Extract VCS Revision from Build Info]
-    F --> G[Extract Jira IDs & Fetch Details]
+    E --> F[Extract JIRA IDs from VCS Message]
+    F --> G[Fetch JIRA Details via API]
     G --> H[Attach Evidence to Package]
 ```
 
@@ -102,9 +103,8 @@ You can modify these by editing the env block in `.github/workflows/create-jira-
 
 - **build_name**: Build name for the evidence (as stored in Artifactory) - **Required**
 - **build_number**: Build number for the evidence (as stored in Artifactory) - **Required**
-- **fetch_depth**: Number of previous commits to fetch (default is 10) - **Optional**
 
-The workflow automatically fetches the VCS revision (commit hash) from the build info in Artifactory, eliminating the need to manually specify a commit. The helper processes this specific commit to extract JIRA IDs.
+The workflow automatically fetches the VCS message from the build info in Artifactory and extracts JIRA IDs directly from it, eliminating the need for git operations or commit history analysis.
 
 ## **Output Schema**
 
@@ -174,29 +174,31 @@ Please refer to the [helper directory README](helper/README.md).
 
 The workflow begins by setting up Go and compiling the custom `helper/main.go` application. This binary contains all the logic for parsing git commits and interacting with the Jira API.
 
-#### **2\. Fetch Build Info and Extract VCS Revision**
+#### **2\. Fetch Build Info and Extract JIRA IDs from VCS Message**
 
-The workflow automatically retrieves the VCS revision from the build info:
+The workflow automatically retrieves the VCS message from the build info and extracts JIRA IDs:
 
 ```bash
 # Fetch build info from Artifactory using JFrog CLI
-# The CLI handles authentication automatically
-VCS_REVISION=$(jf rt curl -X GET "/api/build/$build_name/$build_number" -s | \
-  jq -r '.buildInfo.vcs[0].revision // empty')
+BUILD_INFO=$(jf rt curl -X GET "/api/build/$build_name/$build_number" -s)
+VCS_MESSAGE=$(echo "$BUILD_INFO" | jq -r '.buildInfo.vcs[0].message // empty')
+
+# Extract JIRA IDs directly from the VCS message
+JIRA_IDS=$(echo "$VCS_MESSAGE" | grep -oE "$JIRA_ID_REGEX" | tr '\n' ' ' | xargs)
 ```
 
-This eliminates the need to manually specify commit hashes. The build info must contain VCS information for this to work.
+This eliminates the need for git operations or commit history analysis. The build info must contain VCS information for this to work.
 
 
 
 #### **3\. Extract and Validate Jira Data**
 
-This is the core logic step. The compiled Go helper is executed, using the VCS revision automatically extracted from the build info. The application extracts all matching Jira IDs from the commit, queries the Jira API for their details, and generates the `transformed_jira_data.json` file.
+This is the core logic step. The compiled Go helper is executed with the JIRA IDs extracted from the VCS message. The application queries the Jira API for their details and generates the `transformed_jira_data.json` file.
 
 ```
 # In directory jira/helper
-echo "Processing JIRA details for commit: $VCS_REVISION"
-./main "$VCS_REVISION"  # Processes the specific commit, outputs to transformed_jira_data.json
+echo "Processing JIRA IDs: $JIRA_IDS"
+./main $JIRA_IDS  # Processes the JIRA IDs directly, outputs to transformed_jira_data.json
 ```
 
 ---

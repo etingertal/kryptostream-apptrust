@@ -49,8 +49,6 @@ go build -o main main.go
 ./main <jira_id1> [jira_id2] [jira_id3] ...
 ```
 
-**Note**: In direct mode, JSON output goes to stdout (status messages to stderr).
-
 
 
 ## Environment Variables
@@ -99,8 +97,8 @@ export JIRA_USERNAME="your_email@domain.com"
 
 ### Direct Ticket Processing
 ```bash
-# Outputs JSON to stdout
-./main EV-123 EV-456 EV-789 > output.json
+# Outputs JSON to transformed_jira_data.json
+./main EV-123 EV-456 EV-789
 ```
 
 ## Execution Modes
@@ -108,8 +106,7 @@ export JIRA_USERNAME="your_email@domain.com"
 The application determines execution mode based on provided arguments:
 
 1. **Direct JIRA Mode**: When all arguments match JIRA ID pattern
-   - Outputs JSON to stdout
-   - Status messages to stderr
+   - Outputs JSON to file (default: `transformed_jira_data.json`)
    - No git operations performed
 
 2. **Git-based Mode**: When a commit hash is provided

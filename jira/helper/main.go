@@ -627,7 +627,7 @@ func main() {
 
 // processDirectJiraIDs handles direct JIRA ID processing (no git operations)
 func processDirectJiraIDs(config *AppConfig) error {
-	fmt.Fprintf(os.Stderr, "Processing JIRA IDs: %s\n", strings.Join(config.JIRAIDs, ", "))
+	fmt.Printf("Processing JIRA IDs: %s\n", strings.Join(config.JIRAIDs, ", "))
 
 	// Create a new Jira client
 	jiraClient, err := NewJiraClient()
@@ -638,13 +638,10 @@ func processDirectJiraIDs(config *AppConfig) error {
 	// Get response
 	response := jiraClient.FetchJiraDetails(config.JIRAIDs)
 
-	// marshal the response to JSON
-	jsonBytes, err := json.Marshal(response)
-	if err != nil {
-		return fmt.Errorf("error marshaling JSON: %v", err)
+	// Save results to file using the same method as other modes
+	if err := saveJiraResults(response, config); err != nil {
+		return err
 	}
 
-	// return response to caller through stdout
-	_, err = os.Stdout.Write(jsonBytes)
-	return err
+	return nil
 }
