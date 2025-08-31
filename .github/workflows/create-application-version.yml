@@ -11,7 +11,7 @@ jobs:
       JF_URL: ${{ vars.JF_URL }}
       JF_USER: ${{ vars.JF_USER }}
       JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-      APP_ID: qod
+      APP_ID: quotopia-app
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
 
@@ -24,7 +24,7 @@ jobs:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ vars.JF_USER }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-          APP_ID: swmpup
+          APP_ID: quotopia-app
 
       - name: Get latest quoteofday and ai-translate build numbers
         id: get-latest-builds
@@ -65,7 +65,8 @@ jobs:
           AI_TRANSLATE_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_ai_translate_build_number }}"
   
           echo "APP_ID=$APP_ID"
-          NEXT_VER=${{ github.run_number }}
+          NEXT_VER=1
+          # NEXT_VER=${{ github.run_number }}
           echo "NEXT_VER=$NEXT_VER"
   
           REQUEST_BODY="{\"version\": \"$NEXT_VER\", \"sources\": {\"builds\": [\
@@ -86,24 +87,23 @@ jobs:
           fi
           echo "app_ver=$NEXT_VER" >> $GITHUB_OUTPUT
 
-# TODO:
-#      - name: Promote application to DEV
-#        run: |
-#          APP_VER=${{ steps.create_app_ver.outputs.app_ver }}
-#          REQUEST_BODY="{\"target_stage\":\"DEV\"}"
-#          REQUEST_URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/promote?async=false"
-#          
-#          echo "APP_VER=$APP_VER"
-#          echo "APP_ID=$APP_ID"
-#          echo "REQUEST_BODY: $REQUEST_BODY"
-#          echo "REQUEST_URL: $REQUEST_URL"
-#
-#          STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL")
-#          echo "STATUS_CODE=$STATUS_CODE"
-#          if [ "200" != "$STATUS_CODE" -a "201" != "$STATUS_CODE" ]; then 
-#              echo "Status code is not 200 or 201: $STATUS_CODE"
-#              # Running the request again without silent and output flags to see details about the problem 
-#              curl -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL"
-#              exit 1
-#          fi
-#          echo "Successfully promoted $APP_ID version $APP_VER to DEV"
+      - name: Promote application to DEV
+        run: |
+          APP_VER=${{ steps.create_app_ver.outputs.app_ver }}
+          REQUEST_BODY="{\"target_stage\":\"DEV\"}"
+          REQUEST_URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/promote?async=false"
+          
+          echo "APP_VER=$APP_VER"
+          echo "APP_ID=$APP_ID"
+          echo "REQUEST_BODY: $REQUEST_BODY"
+          echo "REQUEST_URL: $REQUEST_URL"
+
+          STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL")
+          echo "STATUS_CODE=$STATUS_CODE"
+          if [ "200" != "$STATUS_CODE" -a "201" != "$STATUS_CODE" ]; then 
+              echo "Status code is not 200 or 201: $STATUS_CODE"
+              # Running the request again without silent and output flags to see details about the problem 
+              curl -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL"
+              exit 1
+          fi
+          echo "Successfully promoted $APP_ID version $APP_VER to DEV"
