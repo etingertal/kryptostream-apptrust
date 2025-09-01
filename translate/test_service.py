@@ -11,7 +11,7 @@ import time
 async def test_translation_service():
     """Test the translation service endpoints"""
     
-    base_url = "http://localhost:8000"
+    base_url = "http://localhost:8002"
     
     async with aiohttp.ClientSession() as session:
         
@@ -85,13 +85,13 @@ async def test_translation_service():
 def main():
     """Main function"""
     print("🚀 Starting translation service tests...")
-    print("Make sure the service is running on http://localhost:8000")
+    print("Make sure the service is running on http://localhost:8002")
     print("=" * 50)
     
     try:
         asyncio.run(test_translation_service())
     except aiohttp.ClientConnectorError:
-        print("❌ Could not connect to the service. Make sure it's running on http://localhost:8000")
+        print("❌ Could not connect to the service. Make sure it's running on http://localhost:8002")
     except Exception as e:
         print(f"❌ Test failed with error: {e}")
     

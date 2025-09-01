@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONVERT_SCRIPT="$SCRIPT_DIR/convert-cypress-to-markdown.js"
 
 # Default values
-DEFAULT_INPUT="cypress-results.json"
+DEFAULT_INPUT="cypress/results/combined-report.json"
 DEFAULT_OUTPUT="cypress-report.md"
 
 # Parse arguments

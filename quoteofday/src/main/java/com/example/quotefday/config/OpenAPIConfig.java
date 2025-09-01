@@ -16,7 +16,7 @@ public class OpenAPIConfig {
     @Bean
     public OpenAPI quoteOfDayOpenAPI() {
         Server devServer = new Server();
-        devServer.setUrl("http://localhost:8080");
+        devServer.setUrl("http://localhost:8001");
         devServer.setDescription("Development server");
 
         Server prodServer = new Server();

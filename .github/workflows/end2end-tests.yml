@@ -1,16 +1,16 @@
-name: Promote to QA
+name: End 2 End Tests
 
 on:
   workflow_dispatch:
-    inputs:
-      promote_to_qa:
-        description: 'Promote to QA environment'
-        required: false
-        default: true
-        type: boolean
+    # inputs:
+    #   promote_to_qa:
+    #     description: 'Promote to QA environment'
+    #     required: false
+    #     default: true
+    #     type: boolean
 
 jobs:
-  promote-to-qa:
+  end2end-tests:
     name: Promote to QA and run E2E tests
     runs-on: ubuntu-latest
     env:
@@ -45,30 +45,6 @@ jobs:
         echo "latest_dev_version=$LATEST_DEV_VERSION" >> $GITHUB_OUTPUT
         echo "Found latest DEV release bundle version: $LATEST_DEV_VERSION"
     
-    - name: Promote to QA
-      if: ${{ inputs.promote_to_qa == 'true' }}
-      run: |
-        LATEST_DEV_VERSION="${{ steps.get-latest-dev-version.outputs.latest_dev_version }}"
-        
-        echo "🚀 Promoting release bundle quotopia version $LATEST_DEV_VERSION from DEV to QA..."
-        
-        # Promote the release bundle from DEV to QA
-        jf release-bundle-promote quotopia $LATEST_DEV_VERSION QA
-        
-        if [ $? -eq 0 ]; then
-          echo "✅ Successfully promoted quotopia version $LATEST_DEV_VERSION to QA"
-          
-          # Create a link to the QA release bundle
-          QA_LINK="${{ vars.JF_URL }}/ui/artifactory/lifecycle?bundleName=quotopia&releaseBundleVersion=$LATEST_DEV_VERSION&repositoryKey=release-bundles-v2&activeKanbanTab=promotion"
-          echo "🥡 QA Release Bundle: [quotopia:$LATEST_DEV_VERSION]($QA_LINK)" >> $GITHUB_STEP_SUMMARY
-          
-          # Store the version for the E2E test job
-          echo "LATEST_QA_VERSION=$LATEST_DEV_VERSION" >> $GITHUB_ENV
-        else
-          echo "❌ Failed to promote quotopia version $LATEST_DEV_VERSION to QA"
-          exit 1
-                fi
-
     - name: Set QA version (when promotion is skipped)
       if: ${{ inputs.promote_to_qa != 'true' }}
       run: |
@@ -170,15 +146,15 @@ jobs:
         
     - name: Run E2E tests 
       run: |
-        # Start services and run tests with optimized settings
-        echo "🚀 Starting optimized E2E tests..."
+        # Start services and run tests
+        echo "🚀 Starting E2E tests..."
         
         # Pull images in parallel for faster startup
         docker pull evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${{ steps.get-images.outputs.quote_image_tag }} &
         docker pull evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }} &
         wait
         
-        # Start services with optimized health checks
+        # Start services and run tests
         docker compose -f e2e-test-compose.yml up --abort-on-container-exit
         
         # Check if tests passed
@@ -188,106 +164,65 @@ jobs:
           echo "❌ E2E tests failed"
           exit 1
         fi
-
-    - name: Convert Cypress results to Markdown
-      run: |
-        echo "📄 Converting Cypress results to Markdown report..."
         
-        # Check if Cypress results file exists
-        if [ -f "e2e-tests/cypress-results.json" ]; then
-          echo "✅ Found Cypress results file"
-          
-          # Navigate to e2e-tests directory and run conversion
-          cd e2e-tests
-          
-          # Run the conversion script
-          if ./convert-cypress-report.sh cypress-results.json cypress-report.md; then
-            echo "✅ Markdown report generated successfully"
-            
-            # Copy the report to the workspace root for easy access
-            cp cypress-report.md ../cypress-e2e-report.md
-            
-            # Display report summary
-            echo "📊 Report Summary:"
-            head -20 cypress-report.md
-            
-            # Upload the markdown report as an artifact
-            echo "📤 Markdown report saved as: cypress-e2e-report.md"
-          else
-            echo "❌ Failed to generate markdown report"
-            exit 1
-          fi
-        else
-          echo "⚠️  No Cypress results file found, skipping markdown conversion"
-          # Create a simple markdown report indicating no results
-          echo "# Cypress E2E Test Report" > cypress-e2e-report.md
-          echo "" >> cypress-e2e-report.md
-          echo "## 📊 Test Summary" >> cypress-e2e-report.md
-          echo "" >> cypress-e2e-report.md
-          echo "No test results were found. This could indicate:" >> cypress-e2e-report.md
-          echo "- Tests did not run" >> cypress-e2e-report.md
-          echo "- Results file was not generated" >> cypress-e2e-report.md
-          echo "- Results file is in a different location" >> cypress-e2e-report.md
-          echo "" >> cypress-e2e-report.md
-          echo "## 📈 Test Results Overview" >> cypress-e2e-report.md
-          echo "" >> cypress-e2e-report.md
-          echo "**Status:** ⚠️ No Results Available" >> cypress-e2e-report.md
-          echo "" >> cypress-e2e-report.md
-          echo "---" >> cypress-e2e-report.md
-          echo "" >> cypress-e2e-report.md
-          echo "*Report generated on $(date)*" >> cypress-e2e-report.md
-          echo "📄 Created placeholder markdown report"
+    - name: Generate test reports
+      run: |
+        echo "📄 Generating test reports..."
+        
+        # Navigate to e2e-tests directory
+        cd e2e-tests
+        
+        # Check if mochawesome results exist
+        if [ ! -d "cypress/results/mochawesome" ] || [ -z "$(ls -A cypress/results/mochawesome/*.json 2>/dev/null)" ]; then
+          echo "❌ No mochawesome results found"
+          exit 1
         fi
+        
+        echo "✅ Found mochawesome results"
+        
+        # Merge JSON reports (same as local flow)
+        echo "🔄 Merging JSON reports..."
+        npx mochawesome-merge cypress/results/mochawesome/*.json > cypress/results/combined-report.json
+        
+        if [ ! -f "cypress/results/combined-report.json" ]; then
+          echo "❌ Failed to create combined report"
+          exit 1
+        fi
+        
+        echo "✅ Combined report created: $(wc -c < cypress/results/combined-report.json) bytes"
+        
+        # Convert to markdown (same as local flow)
+        echo "🔄 Converting to markdown..."
+        ./convert-cypress-report.sh cypress/results/combined-report.json cypress-report.md
+        
+        if [ ! -f "cypress-report.md" ]; then
+          echo "❌ Failed to create markdown report"
+          exit 1
+        fi
+        
+        echo "✅ Markdown report created: $(wc -c < cypress-report.md) bytes"
+        
+        # Copy reports to workspace root for easy access
+        cp cypress/results/combined-report.json ../cypress-results.json
+        cp cypress-report.md ../cypress-e2e-report.md
+        
+        echo "📊 Report Summary:"
+        head -20 cypress-report.md
 
     - name: Create evidence from the e2e test results
       run: |
-        # Debug: Check what files exist in e2e-tests directory
-        echo "🔍 Checking e2e-tests directory contents:"
-        ls -la e2e-tests/
+        echo "📋 Creating evidence from test results..."
         
-        # Check if results file exists and validate JSON
-        if [ -f "e2e-tests/cypress-results.json" ]; then
-          echo "✅ Cypress results file found"
-          
-          # Validate the JSON
-          if jq empty e2e-tests/cypress-results.json 2>/dev/null; then
-            echo "✅ Valid JSON found"
-            cp e2e-tests/cypress-results.json cypress-results.json
-          else
-            echo "❌ Invalid JSON in results file"
-            echo "📋 File contents:"
-            cat e2e-tests/cypress-results.json
-            exit 1
-          fi
-        else
-          echo "❌ Cypress results file not found"
-          echo "🔍 Checking for any result files:"
-          find e2e-tests/ -name "*results*" -type f 2>/dev/null || echo "No result files found"
-          
-          # Create a simple valid JSON structure since tests are passing
-          echo "🔍 Creating valid JSON structure for evidence creation..."
-          echo '{"stats":{"suites":4,"tests":9,"passes":9,"pending":0,"failures":0,"start":"2025-08-26T12:00:00.000Z","end":"2025-08-26T12:00:00.000Z","duration":1000},"tests":[],"pending":[],"failures":[],"passes":[]}' > cypress-results.json
-          
-          if [ -s "cypress-results.json" ]; then
-            echo "✅ Extracted JSON from container logs"
-            if jq empty cypress-results.json 2>/dev/null; then
-              echo "✅ Valid JSON extracted"
-            else
-              echo "❌ Invalid JSON extracted"
-              exit 1
-            fi
-          else
-            echo "❌ Could not extract JSON from logs"
-            exit 1
-          fi
+        # Validate JSON before creating evidence
+        if ! jq empty cypress-results.json 2>/dev/null; then
+          echo "❌ Invalid JSON in cypress-results.json"
+          exit 1
         fi
         
-        echo "📋 Using Cypress results for evidence creation:"
-        cat cypress-results.json
+        echo "✅ Valid JSON confirmed"
         
         jf evd create --release-bundle quotopia --release-bundle-version ${{ steps.get-latest-dev-version.outputs.latest_dev_version }} \
           --predicate cypress-results.json --markdown cypress-e2e-report.md --provider-id cypress --predicate-type https://cypress.io/evidence/e2e/v1
-          
 
     - name: Upload Cypress Markdown Report
       uses: actions/upload-artifact@v4
@@ -296,13 +231,13 @@ jobs:
         name: cypress-e2e-report
         path: cypress-e2e-report.md
         retention-days: 30
-        if-no-files-found: warn
+        if-no-files-found: error
 
     - name: Cleanup
       if: always()
       run: |
         # Clean up generated files and containers
-        rm -f e2e-test-compose.yml cypress-results.json
+        rm -f e2e-test-compose.yml cypress-results.json cypress-e2e-report.md
         docker compose -f e2e-test-compose.yml down -v 2>/dev/null || true
         docker system prune -f
         

@@ -1,0 +1,90 @@
+name: "Create Jira evidence"
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: "Build name for the evidence"
+        required: true
+      build_number:
+        description: "Build number for the evidence"
+        required: true
+
+jobs:
+  create-jira-evidence:
+    runs-on: ubuntu-latest
+    env:
+      JIRA_ID_REGEX: '[A-Z]+-[0-9]+'
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_URL: ${{ vars.JIRA_URL }}
+      JIRA_USERNAME: ${{ vars.JIRA_USERNAME }}
+    steps:
+      - name: Setup jfrog cli
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ vars.ARTIFACTORY_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Build JIRA helper binary
+        run: |
+          cd jira/helper
+          chmod +x build.sh
+          ./build.sh
+          cd -
+      - name: Fetch build info and extract JIRA IDs from VCS message
+        id: build_info
+        run: |
+          echo "Fetching build info for ${{ github.event.inputs.build_name }} ${{ github.event.inputs.build_number }}..."
+          
+          # Fetch build info using JFrog CLI and extract VCS message
+          BUILD_INFO=$(jf rt curl -X GET "/api/build/${{ github.event.inputs.build_name }}/${{ github.event.inputs.build_number }}" -s)
+          VCS_MESSAGE=$(echo "$BUILD_INFO" | jq -r '.buildInfo.vcs[0].message // empty')
+          
+          if [ -z "$VCS_MESSAGE" ]; then
+            echo "Error: Could not extract VCS message from build info"
+            echo "Attempting to fetch full build info for debugging..."
+            echo "$BUILD_INFO" | jq '.'
+            exit 1
+          fi
+          
+          echo "Found VCS message: $VCS_MESSAGE"
+          
+          # Extract JIRA IDs from the VCS message using the regex pattern
+          # Using grep with -o to output only matching parts and -E for extended regex
+          JIRA_IDS=$(echo "$VCS_MESSAGE" | grep -oE "${{ env.JIRA_ID_REGEX }}" | tr '\n' ' ' | xargs)
+          
+          if [ -z "$JIRA_IDS" ]; then
+            echo "Warning: No JIRA IDs found in VCS message"
+            echo "jira_ids=" >> $GITHUB_OUTPUT
+          else
+            echo "Found JIRA IDs: $JIRA_IDS"
+            echo "jira_ids=$JIRA_IDS" >> $GITHUB_OUTPUT
+          fi
+      - name: Fetch details from jira
+        run: | 
+          cd jira/helper
+          if [ -n "${{ steps.build_info.outputs.jira_ids }}" ]; then
+            echo "Processing JIRA IDs: ${{ steps.build_info.outputs.jira_ids }}"
+            ./main ${{ steps.build_info.outputs.jira_ids }}
+          else
+            echo "No JIRA IDs to process"
+            echo '{"tasks": []}' > transformed_jira_data.json
+          fi
+          cd -
+
+
+      - name: Create JIRA evidence
+        run: |
+          jf evd create \
+            --build-name ${{ github.event.inputs.build_name }} \
+            --build-number ${{ github.event.inputs.build_number }} \
+            --key "${{ secrets.EVIDENCE_PRIVATE_KEY }}" \
+            --key-alias "${{ vars.EVIDENCE_KEY_ALIAS }}" \
+            --predicate ./jira/helper/transformed_jira_data.json \
+            --predicate-type http://atlassian.com/jira/issues/v1
+

@@ -33,7 +33,57 @@ function convertCypressToMarkdown(inputFile, outputFile) {
  * @returns {string} Markdown content
  */
 function generateMarkdown(data) {
-  const { stats, tests, passes, failures, pending } = data;
+  // Handle both Cypress and Mochawesome formats
+  const { stats } = data;
+  
+  // Extract test data based on format
+  let tests, passes, failures, pending;
+  
+  if (data.results) {
+    // Mochawesome format
+    tests = [];
+    passes = [];
+    failures = [];
+    pending = [];
+    
+    // Create a map of suite UUIDs to suite names
+    const suiteMap = new Map();
+    data.results.forEach(result => {
+      if (result.suites) {
+        result.suites.forEach(suite => {
+          suiteMap.set(suite.uuid, suite.title);
+        });
+      }
+    });
+    
+    // Extract tests from mochawesome results structure
+    data.results.forEach(result => {
+      if (result.suites) {
+        result.suites.forEach(suite => {
+          if (suite.tests) {
+            suite.tests.forEach(test => {
+              // Add suite name to test object for easier processing
+              test.suiteName = suite.title;
+              tests.push(test);
+              if (test.state === 'passed') {
+                passes.push(test);
+              } else if (test.state === 'failed') {
+                failures.push(test);
+              } else if (test.pending) {
+                pending.push(test);
+              }
+            });
+          }
+        });
+      }
+    });
+  } else {
+    // Original Cypress format
+    tests = data.tests || [];
+    passes = data.passes || [];
+    failures = data.failures || [];
+    pending = data.pending || [];
+  }
   
   // Calculate duration in seconds
   const duration = Math.round(stats.duration / 1000);
@@ -135,9 +185,32 @@ function generateTestList(tests, status) {
   if (tests.length === 0) return '*No tests found*';
   
   return tests.map(test => {
-    const suiteName = test.title[0];
-    const testName = test.title[1];
-    const duration = Math.round(test.wallClockDuration / 1000);
+    let suiteName, testName, duration;
+    
+    // Handle different formats
+    if (test.fullTitle) {
+      // Mochawesome format - extract suite name from fullTitle
+      const fullTitleParts = test.fullTitle.split(' ');
+      const lastWord = fullTitleParts[fullTitleParts.length - 1];
+      // Find the suite name by removing the test name from the full title
+      const testTitleWords = test.title.split(' ');
+      let suiteName = test.fullTitle;
+      for (const word of testTitleWords) {
+        suiteName = suiteName.replace(word, '').trim();
+      }
+      testName = test.title;
+      duration = test.duration ? Math.round(test.duration / 1000) : 0;
+    } else if (test.title && Array.isArray(test.title)) {
+      // Original Cypress format
+      suiteName = test.title[0];
+      testName = test.title[1];
+      duration = Math.round(test.wallClockDuration / 1000);
+    } else {
+      // Fallback
+      suiteName = 'Unknown Suite';
+      testName = test.title || 'Unknown Test';
+      duration = test.duration ? Math.round(test.duration / 1000) : 0;
+    }
     
     let icon = '✅';
     if (status === 'failed') icon = '❌';
@@ -154,10 +227,26 @@ function generateTestList(tests, status) {
  */
 function generateFailureDetails(failures) {
   return failures.map((test, index) => {
-    const suiteName = test.title[0];
-    const testName = test.title[1];
-    const error = test.error || 'Unknown error';
-    const stack = test.stack || 'No stack trace available';
+    let suiteName, testName;
+    
+    // Handle different formats
+    if (test.fullTitle) {
+      // Mochawesome format
+      const fullTitleParts = test.fullTitle.split(' ');
+      suiteName = fullTitleParts.slice(0, -1).join(' ');
+      testName = test.title;
+    } else if (test.title && Array.isArray(test.title)) {
+      // Original Cypress format
+      suiteName = test.title[0];
+      testName = test.title[1];
+    } else {
+      // Fallback
+      suiteName = 'Unknown Suite';
+      testName = test.title || 'Unknown Test';
+    }
+    
+    const error = test.err?.message || test.error || 'Unknown error';
+    const stack = test.err?.stack || test.stack || 'No stack trace available';
     
     let details = `### ${index + 1}. ${suiteName} > ${testName}
 
@@ -192,7 +281,21 @@ function generateDetailedTestList(tests) {
   // Group tests by suite
   const suites = {};
   tests.forEach(test => {
-    const suiteName = test.title[0];
+    let suiteName;
+    
+    // Handle different formats
+    if (test.fullTitle) {
+      // Mochawesome format
+      const fullTitleParts = test.fullTitle.split(' ');
+      suiteName = fullTitleParts.slice(0, -1).join(' ');
+    } else if (test.title && Array.isArray(test.title)) {
+      // Original Cypress format
+      suiteName = test.title[0];
+    } else {
+      // Fallback
+      suiteName = 'Unknown Suite';
+    }
+    
     if (!suites[suiteName]) {
       suites[suiteName] = [];
     }
@@ -205,9 +308,25 @@ function generateDetailedTestList(tests) {
     details += `### 📁 ${suiteName}\n\n`;
     
     suites[suiteName].forEach(test => {
-      const testName = test.title[1];
-      const duration = Math.round(test.wallClockDuration / 1000);
-      const startTime = new Date(test.wallClockStartedAt).toLocaleTimeString();
+      let testName, duration, startTime;
+      
+      // Handle different formats
+      if (test.fullTitle) {
+        // Mochawesome format
+        testName = test.title;
+        duration = Math.round(test.duration / 1000);
+        startTime = 'N/A'; // Mochawesome doesn't provide start time
+      } else if (test.title && Array.isArray(test.title)) {
+        // Original Cypress format
+        testName = test.title[1];
+        duration = Math.round(test.wallClockDuration / 1000);
+        startTime = new Date(test.wallClockStartedAt).toLocaleTimeString();
+      } else {
+        // Fallback
+        testName = test.title || 'Unknown Test';
+        duration = test.duration ? Math.round(test.duration / 1000) : 0;
+        startTime = 'N/A';
+      }
       
       let statusIcon = '✅';
       let statusText = 'PASSED';

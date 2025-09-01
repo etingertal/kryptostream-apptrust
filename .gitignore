@@ -154,6 +154,18 @@ test-output/
 surefire-reports/
 failsafe-reports/
 
+# Cypress and Mochawesome reports
+cypress/results/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!cypress.config.json
+!reporter-config.json
+
 # Temporary files
 *.swp
 *.swo

@@ -47,9 +47,9 @@ This service uses the [Helsinki-NLP/opus-mt-en-fr](https://huggingface.co/Helsin
    ```
 
 3. **Access the API:**
-   - API: http://localhost:8000
-   - Documentation: http://localhost:8000/docs
-   - Health check: http://localhost:8000/health
+   - API: http://localhost:8002
+- Documentation: http://localhost:8002/docs
+- Health check: http://localhost:8002/health
 
 ### Docker Deployment
 
@@ -60,7 +60,7 @@ This service uses the [Helsinki-NLP/opus-mt-en-fr](https://huggingface.co/Helsin
 
 2. **Run the container:**
    ```bash
-   docker run -p 8000:8000 translation-service
+   docker run -p 8002:8002 translation-service
    ```
 
 ## API Usage Examples
@@ -68,7 +68,7 @@ This service uses the [Helsinki-NLP/opus-mt-en-fr](https://huggingface.co/Helsin
 ### Single Translation
 
 ```bash
-curl -X POST "http://localhost:8000/translate" \
+curl -X POST "http://localhost:8002/translate" \
      -H "Content-Type: application/json" \
      -d '{
        "text": "Hello, how are you?",
@@ -91,7 +91,7 @@ curl -X POST "http://localhost:8000/translate" \
 ### Batch Translation
 
 ```bash
-curl -X POST "http://localhost:8000/translate/batch" \
+curl -X POST "http://localhost:8002/translate/batch" \
      -H "Content-Type: application/json" \
      -d '{
        "texts": [
@@ -107,7 +107,7 @@ curl -X POST "http://localhost:8000/translate/batch" \
 ### Health Check
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8002/health
 ```
 
 **Response:**
@@ -123,7 +123,7 @@ curl http://localhost:8000/health
 ### Environment Variables
 
 - `MODEL_NAME`: Hugging Face model name (default: "Helsinki-NLP/opus-mt-en-fr")
-- `PORT`: Service port (default: 8000)
+- `PORT`: Service port (default: 8002)
 - `HOST`: Service host (default: "0.0.0.0")
 
 ### Model Loading
@@ -162,10 +162,10 @@ To support additional language pairs:
 
 ```bash
 # Test the service
-curl http://localhost:8000/health
+curl http://localhost:8002/health
 
 # Test translation
-curl -X POST "http://localhost:8000/translate" \
+curl -X POST "http://localhost:8002/translate" \
      -H "Content-Type: application/json" \
      -d '{"text": "Hello world"}'
 ```

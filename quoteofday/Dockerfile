@@ -13,6 +13,6 @@ WORKDIR /app
 COPY --chown=spring:spring target/quote-of-day-service-*.jar app.jar
 
 USER spring
-EXPOSE 8080
+EXPOSE 8001
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

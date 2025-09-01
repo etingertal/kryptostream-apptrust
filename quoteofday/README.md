@@ -66,7 +66,7 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-The application will start on `http://localhost:8080`
+The application will start on `http://localhost:8001`
 
 ### Running Tests
 
@@ -151,25 +151,25 @@ Quote of Day Service is running!
 
 ```bash
 # Get today's quote
-curl http://localhost:8080/api/quotes/today
+curl http://localhost:8001/api/quotes/today
 
 # Get quote for specific date
-curl http://localhost:8080/api/quotes/date/2024-01-15
+curl http://localhost:8001/api/quotes/date/2024-01-15
 
 # Get all quotes
-curl http://localhost:8080/api/quotes
+curl http://localhost:8001/api/quotes
 
 # Health check
-curl http://localhost:8080/api/quotes/health
+curl http://localhost:8001/api/quotes/health
 ```
 
 ### Using a web browser
 
 Simply navigate to:
-- `http://localhost:8080/api/quotes/today`
-- `http://localhost:8080/api/quotes/date/2024-01-15`
-- `http://localhost:8080/api/quotes`
-- `http://localhost:8080/api/quotes/health`
+- `http://localhost:8001/api/quotes/today`
+- `http://localhost:8001/api/quotes/date/2024-01-15`
+- `http://localhost:8001/api/quotes`
+- `http://localhost:8001/api/quotes/health`
 
 ## How It Works
 
@@ -183,7 +183,7 @@ The service uses a deterministic algorithm to select quotes based on the day of 
 
 The application can be configured through `src/main/resources/application.properties`:
 
-- **Server Port**: Default is 8080
+- **Server Port**: Default is 8001
 - **Logging**: Configured for INFO level
 - **Jackson**: Configured to exclude null values and format dates properly
 
@@ -217,7 +217,7 @@ The service includes a multi-stage Dockerfile for optimized container builds:
 docker build -t quote-of-day-service .
 
 # Run container
-docker run -p 8080:8080 quote-of-day-service
+docker run -p 8001:8001 quote-of-day-service
 ```
 
 ### Docker Features
@@ -244,7 +244,7 @@ java -jar target/quote-of-day-service-1.0.0.jar
 ```bash
 # Build and run with Docker
 docker build -t quote-of-day-service .
-docker run -p 8080:8080 quote-of-day-service
+docker run -p 8001:8001 quote-of-day-service
 ```
 
 ## Contributing

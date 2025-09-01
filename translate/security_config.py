@@ -137,7 +137,7 @@ def get_environment_security_settings() -> Dict[str, Any]:
             "debug": False,
             "reload": False,
             "host": "0.0.0.0",
-            "port": 8000,
+            "port": 8002,
             "ssl_keyfile": os.getenv("SSL_KEYFILE"),
             "ssl_certfile": os.getenv("SSL_CERTFILE"),
         }
@@ -146,5 +146,5 @@ def get_environment_security_settings() -> Dict[str, Any]:
             "debug": True,
             "reload": True,
             "host": "127.0.0.1",
-            "port": 8000,
+            "port": 8002,
         }

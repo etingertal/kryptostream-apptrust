@@ -86,7 +86,7 @@ export $(cat .env | xargs)
 ./test-artifactory.sh
 
 # Run the container
-docker run -d --name ai-translate-container -p 8000:8000 ai-translate:latest
+docker run -d --name ai-translate-container -p 8002:8002 ai-translate:latest
 ```
 
 ### CI/CD

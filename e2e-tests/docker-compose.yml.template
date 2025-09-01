@@ -5,7 +5,7 @@ services:
     image: evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${QUOTE_IMAGE_TAG}
     container_name: quote-service-qa
     ports:
-      - "8080:8080"
+      - "8001:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=qa
     healthcheck:
@@ -19,7 +19,7 @@ services:
     image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${TRANSLATION_IMAGE_TAG}
     container_name: translation-service-qa
     ports:
-      - "8000:8000"
+      - "8002:8000"
     volumes:
       - model-cache:/app/models
     healthcheck:
@@ -38,14 +38,14 @@ services:
       translation-service:
         condition: service_healthy
     environment:
-      - QUOTE_SERVICE_URL=http://quote-service:8080
-      - TRANSLATION_SERVICE_URL=http://translation-service:8000
+      - QUOTE_SERVICE_URL=http://quote-service:8001
+      - TRANSLATION_SERVICE_URL=http://translation-service:8002
     volumes:
       - ./e2e-tests:/app/tests
       - npm-cache:/root/.npm
       - cypress-cache:/root/.cache/Cypress
     working_dir: /app/tests
-    command: ./run-cypress.sh
+    command: ./run-cypress-docker.sh
       
 volumes:
   model-cache:

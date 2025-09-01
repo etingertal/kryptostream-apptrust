@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotopia - Inspire yourself THEN inspire the world</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="banner-image">
+                <img src="quotopia.png" alt="Quotopia Banner" class="full-width-banner">
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="quote-container">
+                <div class="quote-card">
+                    <blockquote class="quote-text" id="quoteText">
+                        Loading today's inspiration...
+                    </blockquote>
+                    <cite class="quote-author" id="quoteAuthor">
+                        —
+                    </cite>
+                    <div class="quote-date" id="quoteDate"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="date-selector-container">
+                <label for="dateSelector" class="date-label">Select a different date:</label>
+                <input type="date" id="dateSelector" class="date-input" max="2025-12-31">
+            </div>
+            <p>Powered by inspiration • Refreshed daily</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

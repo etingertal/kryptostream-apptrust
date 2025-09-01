@@ -11,7 +11,7 @@ jobs:
       JF_URL: ${{ vars.JF_URL }}
       JF_USER: ${{ vars.JF_USER }}
       JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-      APP_ID: evidencedemo
+      APP_ID: quotopia-app
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
 
@@ -24,7 +24,6 @@ jobs:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ vars.JF_USER }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-          APP_ID: swmpup
 
       - name: Get latest quoteofday and ai-translate build numbers
         id: get-latest-builds
@@ -38,7 +37,15 @@ jobs:
           
           echo "latest_quoteofday_build_number=$LATEST_QUOTEOFDAY_BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "Found latest quoteofday build number: $LATEST_QUOTEOFDAY_BUILD_NUMBER"
-  
+
+          BUILD_RESPONSE=$(curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+            "${{ vars.JF_URL }}/artifactory/api/build/quotopia-ui")
+          LATEST_QUOTOPIA_UI_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
+            jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
+          
+          echo "latest_quotopia_ui_build_number=$LATEST_QUOTOPIA_UI_BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Found latest quotopia-ui build number: $LATEST_QUOTOPIA_UI_BUILD_NUMBER"  
           BUILD_RESPONSE=$(curl -s -X GET \
             -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
             "${{ vars.JF_URL }}/artifactory/api/build/ai-translate")
@@ -48,19 +55,48 @@ jobs:
           echo "latest_ai_translate_build_number=$LATEST_AI_TRANSLATE_BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "Found latest ai-translate build number: $LATEST_AI_TRANSLATE_BUILD_NUMBER"
 
+      - name: Get latest application version
+        id: get_app_ver
+        run: |
+          # Use the API to get the latest version.
+          # We use limit=1 and order_by=created to get the most recent version.
+          API_URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions?order_by=created&limit=1"
+          
+          echo "Fetching latest application version from: $API_URL"
+          
+          RESPONSE=$(curl -s -X GET \
+            -H "Authorization: Bearer $JF_ACCESS_TOKEN" \
+            "$API_URL")
+          
+          # Use jq to parse the JSON and extract the version.
+          # The API returns an array 'versions', so we get the first element.
+          LATEST_VER=$(echo "$RESPONSE" | jq -r '.versions[0].version')
+          
+          if [ "$LATEST_VER" == "null" ] || [ -z "$LATEST_VER" ]; then
+            echo "Error: Could not retrieve a valid application version."
+            exit 1
+          fi
+          
+          echo "Found latest application version: $LATEST_VER"
+          echo "app_ver=$LATEST_VER" >> $GITHUB_OUTPUT
+
       - name: Create an application version
         id: create_app_ver
         run: |
           set +e
           QUOTEOFDAY_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_quoteofday_build_number }}"
+          QUOTOPIA_UI_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_quotopia_ui_build_number }}"
           AI_TRANSLATE_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_ai_translate_build_number }}"
   
           echo "APP_ID=$APP_ID"
-          NEXT_VER=${{ github.run_number }}
+          LATEST_VER="${{ steps.get_app_ver.outputs.app_ver }}"
+          NEXT_VER=$((LATEST_VER + 1))
+          echo "LATEST_VER=$LATEST_VER"
           echo "NEXT_VER=$NEXT_VER"
   
           REQUEST_BODY="{\"version\": \"$NEXT_VER\", \"sources\": {\"builds\": [\
           {\"name\":\"quoteofday\", \"number\":\"$QUOTEOFDAY_BUILD_NUMBER\", \"include_dependencies\":false},\
+          {\"name\":\"quotopia-ui\", \"number\":\"$QUOTOPIA_UI_BUILD_NUMBER\", \"include_dependencies\":false},\
           {\"name\":\"ai-translate\", \"number\":\"$AI_TRANSLATE_BUILD_NUMBER\", \"include_dependencies\":false}\
           ]}}"
           echo "REQUEST_BODY=$REQUEST_BODY"
@@ -76,24 +112,23 @@ jobs:
           fi
           echo "app_ver=$NEXT_VER" >> $GITHUB_OUTPUT
 
-# TODO:
-#      - name: Promote application to DEV
-#        run: |
-#          APP_VER=${{ steps.create_app_ver.outputs.app_ver }}
-#          REQUEST_BODY="{\"target_stage\":\"DEV\"}"
-#          REQUEST_URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/promote?async=false"
-#          
-#          echo "APP_VER=$APP_VER"
-#          echo "APP_ID=$APP_ID"
-#          echo "REQUEST_BODY: $REQUEST_BODY"
-#          echo "REQUEST_URL: $REQUEST_URL"
-#
-#          STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL")
-#          echo "STATUS_CODE=$STATUS_CODE"
-#          if [ "200" != "$STATUS_CODE" -a "201" != "$STATUS_CODE" ]; then 
-#              echo "Status code is not 200 or 201: $STATUS_CODE"
-#              # Running the request again without silent and output flags to see details about the problem 
-#              curl -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL"
-#              exit 1
-#          fi
-#          echo "Successfully promoted $APP_ID version $APP_VER to DEV"
+      - name: Promote application to DEV
+        run: |
+          APP_VER=${{ steps.create_app_ver.outputs.app_ver }}
+          REQUEST_BODY="{\"target_stage\":\"DEV\"}"
+          REQUEST_URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/promote?async=false"
+          
+          echo "APP_VER=$APP_VER"
+          echo "APP_ID=$APP_ID"
+          echo "REQUEST_BODY: $REQUEST_BODY"
+          echo "REQUEST_URL: $REQUEST_URL"
+
+          STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL")
+          echo "STATUS_CODE=$STATUS_CODE"
+          if [ "200" != "$STATUS_CODE" -a "201" != "$STATUS_CODE" ]; then 
+              echo "Status code is not 200 or 201: $STATUS_CODE"
+              # Running the request again without silent and output flags to see details about the problem 
+              curl -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -d "$REQUEST_BODY" "$REQUEST_URL"
+              exit 1
+          fi
+          echo "Successfully promoted $APP_ID version $APP_VER to DEV"

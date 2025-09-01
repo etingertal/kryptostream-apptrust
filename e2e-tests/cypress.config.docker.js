@@ -2,7 +2,7 @@ const { defineConfig } = require('cypress')
 
 module.exports = defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:8001',
+    baseUrl: 'http://quote-service:8080',
     supportFile: 'cypress/support/e2e.js',
     specPattern: 'cypress/e2e/**/*.cy.js',
     video: false,
@@ -12,8 +12,8 @@ module.exports = defineConfig({
       configFile: 'reporter-config.json'
     },
     env: {
-      quoteServiceUrl: 'http://localhost:8001',
-      translationServiceUrl: 'http://localhost:8002'
+      quoteServiceUrl: 'http://quote-service:8080',
+      translationServiceUrl: 'http://translation-service:8000'
     },
     // Performance optimizations
     defaultCommandTimeout: 10000,

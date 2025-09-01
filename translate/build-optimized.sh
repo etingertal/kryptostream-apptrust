@@ -66,13 +66,13 @@ if [[ "${TEST_IMAGE}" == "true" ]]; then
     print_status "Testing the built image..."
     
     # Run container
-    docker run -d --name test-ai-translate-container -p 8000:8000 ${LATEST_IMAGE}
+    docker run -d --name test-ai-translate-container -p 8002:8002 ${LATEST_IMAGE}
     
     # Wait for container to start
     sleep 10
     
     # Test health endpoint
-    if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+    if curl -f http://localhost:8002/health > /dev/null 2>&1; then
         print_status "✅ Health check passed"
     else
         print_error "❌ Health check failed"
@@ -81,7 +81,7 @@ if [[ "${TEST_IMAGE}" == "true" ]]; then
     fi
     
     # Test root endpoint
-    if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+    if curl -f http://localhost:8002/ > /dev/null 2>&1; then
         print_status "✅ Root endpoint check passed"
     else
         print_error "❌ Root endpoint check failed"

@@ -7,9 +7,9 @@ module.exports = defineConfig({
     specPattern: 'cypress/e2e/**/*.cy.js',
     video: false,
     screenshotOnRunFailure: false,
-    reporter: 'mocha-multi-reporters',
+    reporter: 'json',
     reporterOptions: {
-      configFile: 'reporter-config.json'
+      outputFile: 'cypress-results.json'
     },
     env: {
       quoteServiceUrl: 'http://localhost:8001',
