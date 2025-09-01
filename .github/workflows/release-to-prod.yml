@@ -69,9 +69,9 @@ jobs:
         echo
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        if [ "" != "$(git diff) ]; then
+        if [ "" != "$(git diff)" ]; then
             echo "Release version changed, pushing..."
             git add kargo/release_version && git commit -m "Update kargo/release_version to $RELEASED_VERSION" && git push
         else
-            echo "Release version wasn't changed."
+            echo "Release version was not changed."
         fi
