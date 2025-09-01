@@ -28,29 +28,32 @@ jobs:
       - name: Get latest quoteofday and ai-translate build numbers
         id: get-latest-builds
         run: |
+          set +e
+          function getBuildNumber() {
+            local RESPONSE=$(curl -s -X GET \
+                                -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+                                "${{ vars.JF_URL }}/artifactory/api/build/$1")
+            local LATEST_BUILD_NUMBER=$(echo "$RESPONSE" | \
+                                jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")'
+            if [ $? -ne 0 ]; then 
+                echo "Failed to parse latest build number for buiid '$1' from response: $RESPONSE"
+                exit 1
+            fi
+            echo "$LATEST_BUILD_NUMBER"
+          }
+
           # Fetch build information from Artifactory API
-          BUILD_RESPONSE=$(curl -s -X GET \
-            -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-            "${{ vars.JF_URL }}/artifactory/api/build/quoteofday")
-          LATEST_QUOTEOFDAY_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
-            jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
+          LATEST_QUOTEOFDAY_BUILD_NUMBER=$(getBuildNumber quoteofday)
           
           echo "latest_quoteofday_build_number=$LATEST_QUOTEOFDAY_BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "Found latest quoteofday build number: $LATEST_QUOTEOFDAY_BUILD_NUMBER"
 
-          BUILD_RESPONSE=$(curl -s -X GET \
-            -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-            "${{ vars.JF_URL }}/artifactory/api/build/quotopia-ui")
-          LATEST_QUOTOPIA_UI_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
-            jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
+          LATEST_QUOTOPIA_UI_BUILD_NUMBER=$(getBuildNumber quotopia-ui)
           
           echo "latest_quotopia_ui_build_number=$LATEST_QUOTOPIA_UI_BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "Found latest quotopia-ui build number: $LATEST_QUOTOPIA_UI_BUILD_NUMBER"  
-          BUILD_RESPONSE=$(curl -s -X GET \
-            -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-            "${{ vars.JF_URL }}/artifactory/api/build/ai-translate")
-          LATEST_AI_TRANSLATE_BUILD_NUMBER=$(echo "$BUILD_RESPONSE" | \
-            jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
+          
+          LATEST_AI_TRANSLATE_BUILD_NUMBER=$(getBuildNumber ai-translate)
           
           echo "latest_ai_translate_build_number=$LATEST_AI_TRANSLATE_BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "Found latest ai-translate build number: $LATEST_AI_TRANSLATE_BUILD_NUMBER"
