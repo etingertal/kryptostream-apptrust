@@ -136,7 +136,7 @@ jobs:
 
   create_jira_evidence:
     needs: build
-    uses: ./.github/workflows/create-jira-evidence.yml@main
+    uses: ./.github/workflows/create-jira-evidence.yml
     with: 
       build_name: ${{ needs.build.outputs.build_name }}
       build_number: ${{ needs.build.outputs.build_number }}
