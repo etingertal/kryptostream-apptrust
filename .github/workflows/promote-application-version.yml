@@ -20,6 +20,9 @@ jobs:
       TARGET_STAGE: ${{ github.event.inputs.target_stage }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Get latest application version
         id: get_app_ver
         run: |
@@ -69,3 +72,27 @@ jobs:
             echo "Failed to promote application. HTTP status code: $STATUS_CODE"
             exit 1
           fi
+
+      - name: Notify Kargo to Deploy
+        run: |
+          set +e
+          if [ "${{ env.TARGET_STAGE }}" == "prod" -o "${{ env.TARGET_STAGE }}" == "PROD" ]; then
+              echo "Env ${{ env.TARGET_STAGE }} is PRODD, notifying cargo."
+              RELEASED_VERSION="{ \"app_id\": \"${{ env.TARGET_STAGE }}\", \"app_ver\": \"\${{ steps.get_app_ver.outputs.app_ver }}"}"
+              mkdir -p kargo
+              echo "$RELEASED_VERSION" > kargo/release_version
+              echo "Created release version file:"
+              cat kargo/release_version
+              echo
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              if [ "" != "$(git diff)" ]; then
+                  echo "Release version changed, pushing..."
+                  git add kargo/release_version && git commit -m "Update kargo/release_version to $RELEASED_VERSION" && git push
+              else
+                  echo "Release version was not changed."
+              fi
+          else
+              echo "Env ${{ env.TARGET_STAGE }} is not PROD, not notifying kargo."
+          fi
+

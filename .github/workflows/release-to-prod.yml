@@ -57,21 +57,3 @@ jobs:
           echo "❌ Failed to release quotopia version $LATEST_QA_VERSION to PROD"
           exit 1
         fi
-    
-    - name: Notify Kargo to Deploy
-      run: |
-        set +e
-        RELEASED_VERSION="{ \"app_id\": \"quotopia\", \"app_ver\": \"${{ steps.get-latest-qa-version.outputs.latest_qa_version }}\"}"
-        mkdir -p kargo
-        echo "$RELEASED_VERSION" > kargo/release_version
-        echo "Created release version file:"
-        cat kargo/release_version
-        echo
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        if [ "" != "$(git diff)" ]; then
-            echo "Release version changed, pushing..."
-            git add kargo/release_version && git commit -m "Update kargo/release_version to $RELEASED_VERSION" && git push
-        else
-            echo "Release version was not changed."
-        fi
