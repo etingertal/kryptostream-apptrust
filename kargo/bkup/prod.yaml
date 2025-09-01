@@ -6,10 +6,10 @@ metadata:
   creationTimestamp: 2025-08-31T07:28:49Z
   finalizers:
     - kargo.akuity.io/finalizer
-  generation: 4
+  generation: 7
   name: prod
   namespace: swampup-2025-evidence-demo
-  resourceVersion: "221286"
+  resourceVersion: "222004"
   uid: 1330470d-11b4-4eca-8059-6b4b2b322318
 spec:
   promotionTemplate:
@@ -27,9 +27,9 @@ spec:
         - as: app_details
           config:
             outputs:
-              - fromExpression: .app_id
+              - fromExpression: app_id
                 name: app_id
-              - fromExpression: .app_ver
+              - fromExpression: app_ver
                 name: app_ver
             path: ./src/kargo/release_version
           continueOnError: false
@@ -42,13 +42,13 @@ spec:
                 value: Bearer ${{ secret('evidence-trial-jpd-token').JF_TOKEN }}
             method: GET
             outputs:
-              - fromExpression: .sources[0].build.name
+              - fromExpression: sources[0].build.name
                 name: build1_name
-              - fromExpression: .sources[0].build.number
+              - fromExpression: sources[0].build.number
                 name: build1_number
-              - fromExpression: .sources[1].build.name
+              - fromExpression: sources[1].build.name
                 name: build2_name
-              - fromExpression: .sources[1].build.number
+              - fromExpression: sources[1].build.number
                 name: build2_number
             url: https://evidencetrial.jfrog.io/apptrust/api/v1/applications/${{
               outputs.app_details.app_id }}/versions/${{
