@@ -39,8 +39,8 @@ python3 -c "import transformers, torch, huggingface_hub" 2>/dev/null || {
 # Set environment variables
 export HF_HUB_ETAG_TIMEOUT=86400
 export HF_HUB_DOWNLOAD_TIMEOUT=86400
-export HF_ENDPOINT=https://evidencetrial.jfrog.io/artifactory/api/huggingfaceml/dev-huggingfaceml-remote
-export HF_TOKEN=cmVmdGtuOjAxOjE3ODY5NjY4NTU6VnMwakUzdU80Z2RMeE9pOGo3WDUzTkZvT1VF
+export HF_ENDPOINT=https://apptrustswampup.jfrog.io/artifactory/api/huggingfaceml/dev-huggingfaceml-remote
+export HF_TOKEN=cmVmdGtuOjAxOjE3ODgyNTc5Nzg6ZUFDUFdzSG1qbHJLVVJ4SjBDc2NsSG5XNjVq
 export TRANSFORMERS_CACHE=./test_models
 export HF_HOME=./test_models
 

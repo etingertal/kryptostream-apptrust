@@ -48,10 +48,15 @@ jobs:
       uses: jfrog/setup-jfrog-cli@v4
       with:
         version: 2.78.3
+        custom-server-id: evidence-demo
       env:
         JF_URL: ${{ vars.JF_URL }}
         JF_USER: ${{ vars.JF_USER }}
         JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+
+    - name: Setup Maven
+      run: |
+        jf mvnc --server-id-resolve evidence-demo --server-id-deploy evidence-demo --repo-resolve-releases evidence-demo-libs-release --repo-resolve-snapshots evidence-demo-libs-snapshot --repo-deploy-releases evidence-demo-libs-release --repo-deploy-snapshots evidence-demo-libs-snapshot
       
     - name: Build and Deploy to Artifactory
       run: |
@@ -61,7 +66,7 @@ jobs:
         echo "📦 Updated version to 1.0.0-${{ github.run_number }}"
         
         # Build and deploy to Artifactory
-        jf mvn deploy -q --batch-mode --no-transfer-progress --build-name quoteofday --build-number ${{ github.run_number }}
+        jf mvn deploy -q --batch-mode --no-transfer-progress --build-name quoteofday --build-number ${{ github.run_number }} 
 
     - name: Compile java for Sonar scan
       run: |
