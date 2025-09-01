@@ -9,6 +9,12 @@ on:
       build_number:
         description: "Build number for the evidence"
         required: true
+  workflow_call:
+    inputs:
+      build_name:
+        required: true
+      build_number:
+        required: true
 
 jobs:
   create-jira-evidence:
