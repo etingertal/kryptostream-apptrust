@@ -62,6 +62,9 @@ jobs:
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
     needs: test
+    outputs: 
+      build_name: ${{ steps.publish_build.outputs.build_name }}
+      build_number: ${{ steps.publish_build.outputs.build_number }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -124,7 +127,17 @@ jobs:
           --predicate grype-output.json --provider-id anchore --predicate-type https://anchore.com/evidence/grype/v1
 
     - name: Publish buildinfo
+      id: publish_build
       run: |
         jf rt build-add-git ai-translate ${{ github.run_number }}
         jf rt build-publish ai-translate ${{ github.run_number }} 
+        echo "build_name=ai-translate" >> $GITHUB_OUTPUT
+        echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
+  create_jira_evidence:
+    needs: build
+    uses: ./.github/workflows/create-jira-evidence.yml
+    secrets: inherit
+    with: 
+      build_name: ${{ needs.build.outputs.build_name }}
+      build_number: ${{ needs.build.outputs.build_number }}

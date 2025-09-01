@@ -20,6 +20,9 @@ jobs:
     env:
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
+    outputs:
+      build_name: ${{ steps.publish_build.outputs.build_name }}
+      build_number: ${{ steps.publish_build.outputs.build_number }}
 
     steps:
     - name: Checkout code
@@ -152,9 +155,12 @@ jobs:
         } 
 
     - name: Publish buildinfo
+      id: publish_build
       run: |
         jf rt build-add-git quoteofday ${{ github.run_number }}
         jf rt build-publish quoteofday ${{ github.run_number }}
+        echo "build_name=quoteofday" >> $GITHUB_OUTPUT
+        echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
     - name: Add signature Evidence
       run: |
@@ -162,3 +168,10 @@ jobs:
         jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
           --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
+  create_jira_evidence:
+    needs: build-and-test
+    uses: ./.github/workflows/create-jira-evidence.yml
+    secrets: inherit
+    with: 
+      build_name: ${{ needs.build-and-test.outputs.build_name }}
+      build_number: ${{ needs.build-and-test.outputs.build_number }}

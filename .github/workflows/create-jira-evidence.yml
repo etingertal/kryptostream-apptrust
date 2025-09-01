@@ -9,6 +9,21 @@ on:
       build_number:
         description: "Build number for the evidence"
         required: true
+  workflow_call:
+    inputs:
+      build_name:
+        required: true
+        type: string
+      build_number:
+        required: true
+        type: string
+    secrets:
+      JIRA_API_TOKEN:
+        required: true
+      ARTIFACTORY_ACCESS_TOKEN:
+        required: true
+      EVIDENCE_PRIVATE_KEY:
+        required: true
 
 jobs:
   create-jira-evidence:
@@ -18,6 +33,9 @@ jobs:
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       JIRA_URL: ${{ vars.JIRA_URL }}
       JIRA_USERNAME: ${{ vars.JIRA_USERNAME }}
+      BUILD_NAME: ${{ inputs.build_name || github.event.inputs.build_name }}
+      BUILD_NUMBER: ${{ inputs.build_number || github.event.inputs.build_number }}
+      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
     steps:
       - name: Setup jfrog cli
         uses: jfrog/setup-jfrog-cli@v4
@@ -39,10 +57,10 @@ jobs:
       - name: Fetch build info and extract JIRA IDs from VCS message
         id: build_info
         run: |
-          echo "Fetching build info for ${{ github.event.inputs.build_name }} ${{ github.event.inputs.build_number }}..."
+          echo "Fetching build info for ${{ env.BUILD_NAME }} ${{ env.BUILD_NUMBER }}..."
           
           # Fetch build info using JFrog CLI and extract VCS message
-          BUILD_INFO=$(jf rt curl -X GET "/api/build/${{ github.event.inputs.build_name }}/${{ github.event.inputs.build_number }}" -s)
+          BUILD_INFO=$(jf rt curl -X GET "/api/build/${{ env.BUILD_NAME }}/${{ env.BUILD_NUMBER }}" -s)
           VCS_MESSAGE=$(echo "$BUILD_INFO" | jq -r '.buildInfo.vcs[0].message // empty')
           
           if [ -z "$VCS_MESSAGE" ]; then
@@ -81,10 +99,8 @@ jobs:
       - name: Create JIRA evidence
         run: |
           jf evd create \
-            --build-name ${{ github.event.inputs.build_name }} \
-            --build-number ${{ github.event.inputs.build_number }} \
-            --key "${{ secrets.EVIDENCE_PRIVATE_KEY }}" \
-            --key-alias "${{ vars.EVIDENCE_KEY_ALIAS }}" \
+            --build-name ${{ env.BUILD_NAME }} \
+            --build-number ${{ env.BUILD_NUMBER }} \
             --predicate ./jira/helper/transformed_jira_data.json \
             --predicate-type http://atlassian.com/jira/issues/v1
 
