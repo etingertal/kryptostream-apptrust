@@ -100,8 +100,6 @@ jobs:
           jf evd create \
             --build-name ${{ env.BUILD_NAME }} \
             --build-number ${{ env.BUILD_NUMBER }} \
-            --key "${{ secrets.EVIDENCE_PRIVATE_KEY }}" \
-            --key-alias "${{ vars.EVIDENCE_KEY_ALIAS }}" \
             --predicate ./jira/helper/transformed_jira_data.json \
             --predicate-type http://atlassian.com/jira/issues/v1
 
