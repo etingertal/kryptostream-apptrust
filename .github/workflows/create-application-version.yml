@@ -58,27 +58,29 @@ jobs:
       - name: Get latest application version
         id: get_app_ver
         run: |
+          # Define a temporary file to store the API response body
+          RESPONSE_BODY_FILE=$(mktemp)
+
           # Use the API to get the latest version.
           # We use limit=1 and order_by=created to get the most recent version.
           API_URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions?order_by=created&limit=1"
 
           echo "Fetching latest application version from: $API_URL"
 
-          # Use curl with -w "%{http_code}" to get the status code,
-          # and -sS to silence progress but show errors.
-          RESPONSE=$(curl -sS -o /dev/null -w "%{http_code}" \
+          # Use curl to get the HTTP status code and save the body to a temp file.
+          HTTP_CODE=$(curl -sS -o "$RESPONSE_BODY_FILE" -w "%{http_code}" \
             -H "Authorization: Bearer $JF_ACCESS_TOKEN" \
             "$API_URL")
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
 
           echo "HTTP Response Code: $HTTP_CODE"
 
           # Check if the API call was successful (200, 201, 202)
           if [[ "$HTTP_CODE" =~ ^(200|201|202)$ ]]; then
+            # Read the JSON response from the temp file.
+            RESPONSE_BODY=$(cat "$RESPONSE_BODY_FILE")
+            
             # Use jq to parse the JSON and extract the version.
-            LATEST_VER=$(echo "$BODY" | jq -r '.versions[0].version')
+            LATEST_VER=$(echo "$RESPONSE_BODY" | jq -r '.versions[0].version')
             
             # Check if the extracted version is null or empty.
             if [ "$LATEST_VER" == "null" ] || [ -z "$LATEST_VER" ]; then
@@ -89,9 +91,14 @@ jobs:
             fi
           else
             echo "Error: API call failed with HTTP status code $HTTP_CODE."
-            echo "Response body: $BODY"
+            echo "Response body from temp file:"
+            cat "$RESPONSE_BODY_FILE"
+            rm "$RESPONSE_BODY_FILE" # Clean up temp file on failure
             exit 1
           fi
+
+          # Clean up the temporary file
+          rm "$RESPONSE_BODY_FILE"
 
           echo "app_ver=$LATEST_VER" >> $GITHUB_OUTPUT
 
