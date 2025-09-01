@@ -62,11 +62,15 @@ jobs:
       run: |
         RELEASED_VERSION="{ \"app_id\": \"quotopia\", \"app_ver\": \"${{ steps.get-latest-qa-version.outputs.latest_qa_version }}\"}"
         mkdir -p kargo
-        echo "$RELEASED_VERSION" > kargo/released_version
-        cat kargo/released_version
+        echo "$RELEASED_VERSION" > kargo/release_version
+        echo "Created release version file:"
+        cat kargo/release_version
+        echo
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        echo "Git add kargo/release_version"
         git add kargo/release_version
         git status
+        echo "Git commit"
         git commit -m "Update kargo/release_version to $RELEASED_VERSION"
         git push
