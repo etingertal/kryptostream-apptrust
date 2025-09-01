@@ -10,7 +10,7 @@ This document describes the end-to-end test integration that has been added to t
 
 A new job called `e2e-test` has been added to the workflow that:
 - Runs after the promotion to QA is successful
-- Pulls Docker images from the QA repository (`evidencetrial.jfrog.io/commons-qa-docker-local/`)
+- Pulls Docker images from the QA repository (`apptrustswampup.jfrog.io/commons-qa-docker-local/`)
 - Runs the services without rebuilding them
 - Executes comprehensive E2E tests
 - Generates detailed JSON test results
@@ -84,8 +84,8 @@ The workflow generates two types of test results:
     "timestamp": "2025-08-25T10:30:00Z",
     "workflow": "promote-to-qa",
     "qa_version": "1.0.0-SNAPSHOT",
-    "quote_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/quote-of-day-service:1.0.0-SNAPSHOT",
-    "translation_service_image": "evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:1.0.0-SNAPSHOT",
+    "quote_service_image": "apptrustswampup.jfrog.io/commons-qa-docker-local/quote-of-day-service:1.0.0-SNAPSHOT",
+    "translation_service_image": "apptrustswampup.jfrog.io/commons-qa-docker-local/ai-translate:1.0.0-SNAPSHOT",
     "environment": "qa",
     "status": "completed"
   },

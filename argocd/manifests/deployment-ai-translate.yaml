@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: ai-translate-container
-        image: evidencetrial.jfrog.io/commons-dev-docker-local/ai-translate:52 
+        image: apptrustswampup.jfrog.io/commons-dev-docker-local/ai-translate:52 
         ports:
         - containerPort: 8080
       imagePullSecrets:
-        - name: evidencetrial
+        - name: apptrustswampup

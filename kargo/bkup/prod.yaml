@@ -61,7 +61,7 @@ spec:
               }}.yaml
             updates:
               key: spec.template.spec.containers.image
-              value: evidencetrial.jfrog.io/commons-dev-docker-local/${{
+              value: apptrustswampup.jfrog.io/commons-dev-docker-local/${{
                 outputs.build_details.build1_name }}:${{
                 outputs.build_details.build1_number }}
           uses: yaml-update
@@ -70,7 +70,7 @@ spec:
               }}.yaml
             updates:
               key: spec.template.spec.containers.image
-              value: evidencetrial.jfrog.io/commons-dev-docker-local/${{
+              value: apptrustswampup.jfrog.io/commons-dev-docker-local/${{
                 outputs.build_details.build2_name }}:${{
                 outputs.build_details.build2_number }}
           uses: yaml-update

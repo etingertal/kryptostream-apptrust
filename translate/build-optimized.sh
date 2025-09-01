@@ -47,7 +47,7 @@ docker buildx build \
     --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
     --build-arg HF_HUB_ETAG_TIMEOUT=86400 \
     --build-arg HF_HUB_DOWNLOAD_TIMEOUT=86400 \
-    --build-arg HF_ENDPOINT=https://evidencetrial.jfrog.io/artifactory/api/huggingfaceml/dev-huggingfaceml-remote \
+    --build-arg HF_ENDPOINT=https://apptrustswampup.jfrog.io/artifactory/api/huggingfaceml/dev-huggingfaceml-remote \
     --build-arg HF_TOKEN=cmVmdGtuOjAxOjE3ODY5NjY4NTU6VnMwakUzdU80Z2RMeE9pOGo3WDUzTkZvT1VF \
     --tag ${IMAGE_NAME}:${BUILD_NUMBER} \
     --tag ${LATEST_IMAGE} \

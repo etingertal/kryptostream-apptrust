@@ -41,7 +41,7 @@
 ```bash
 HF_HUB_ETAG_TIMEOUT=86400
 HF_HUB_DOWNLOAD_TIMEOUT=86400
-HF_ENDPOINT=https://evidencetrial.jfrog.io/artifactory/api/huggingfaceml/dev-huggingfaceml-remote
+HF_ENDPOINT=https://apptrustswampup.jfrog.io/artifactory/api/huggingfaceml/dev-huggingfaceml-remote
 HF_TOKEN=cmVmdGtuOjAxOjE3ODY5NjY4NTU6VnMwakUzdU80Z2RMeE9pOGo3WDUzTkZvT1VF
 ```
 

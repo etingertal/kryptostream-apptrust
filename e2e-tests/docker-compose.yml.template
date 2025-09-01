@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   quote-service:
-    image: evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${QUOTE_IMAGE_TAG}
+    image: apptrustswampup.jfrog.io/commons-qa-docker-local/quoteofday:${QUOTE_IMAGE_TAG}
     container_name: quote-service-qa
     ports:
       - "8001:8080"
@@ -16,7 +16,7 @@ services:
       start_period: 20s
       
   translation-service:
-    image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${TRANSLATION_IMAGE_TAG}
+    image: apptrustswampup.jfrog.io/commons-qa-docker-local/ai-translate:${TRANSLATION_IMAGE_TAG}
     container_name: translation-service-qa
     ports:
       - "8002:8000"
