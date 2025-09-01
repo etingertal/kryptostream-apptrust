@@ -30,14 +30,14 @@ jobs:
         run: |
           set +e
           getBuildNumber() {
-            echo "Requeseting build ${{ vars.JF_URL }}/artifactory/api/build/$1"
+            echo "Requeseting build ${{ vars.JF_URL }}/artifactory/api/build/$1" >&2
             local RESPONSE=$(curl -s -X GET \
                                 -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
                                 "${{ vars.JF_URL }}/artifactory/api/build/$1")
             local LATEST_BUILD_NUMBER=$(echo "$RESPONSE" | \
                                 jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
             if [ "" == "$LATEST_BUILD_NUMBER" ]; then 
-                echo "Failed to parse latest build number for build '$1' from response: $RESPONSE"
+                echo "Failed to parse latest build number for build '$1' from response: $RESPONSE" > &2
                 exit 1
             fi
             echo "$LATEST_BUILD_NUMBER"
