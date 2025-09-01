@@ -47,7 +47,7 @@ jobs:
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
       with:
-        version: 2.78.3
+        version: latest
         custom-server-id: evidence-demo
       env:
         JF_URL: ${{ vars.JF_URL }}
