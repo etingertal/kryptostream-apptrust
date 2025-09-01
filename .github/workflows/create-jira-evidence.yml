@@ -13,8 +13,10 @@ on:
     inputs:
       build_name:
         required: true
+        type: string
       build_number:
         required: true
+        type: string
 
 jobs:
   create-jira-evidence:
