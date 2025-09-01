@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4
       with:
@@ -58,7 +60,7 @@ jobs:
     
     - name: Notify Kargo to Deploy
       run: |
-        RELEASED_VERSION="{ \"app_id\": \"quotopia\", \"app_ver\": \"${{ steps.get-latest-qa-version.outputs.latest_qa_version }}\""
+        RELEASED_VERSION="{ \"app_id\": \"quotopia\", \"app_ver\": \"${{ steps.get-latest-qa-version.outputs.latest_qa_version }}\"}"
         mkdir -p kargo
         echo "$RELEASED_VERSION" > kargo/released_version
         git config user.name "github-actions[bot]"
