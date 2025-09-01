@@ -17,6 +17,13 @@ on:
       build_number:
         required: true
         type: string
+    secrets:
+      JIRA_API_TOKEN:
+        required: true
+      ARTIFACTORY_ACCESS_TOKEN:
+        required: true
+      EVIDENCE_PRIVATE_KEY:
+        required: true
 
 jobs:
   create-jira-evidence:
