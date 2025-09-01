@@ -2,6 +2,8 @@ name: AI Translate Service CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'translate/**'
       - '.github/workflows/ai-translate-ci.yml'
