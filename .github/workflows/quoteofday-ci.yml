@@ -148,7 +148,7 @@ jobs:
         jf docker buildx build --platform linux/amd64,linux/arm64 \
           --tag ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
-        jf rt build-docker-create commons-dev-docker-local  \
+        jf rt build-docker-create quotopia-dev-docker  \
           --image-file build-metadata --build-name quoteofday --build-number ${{ github.run_number }} 
 
     - name: Evidence on docker image
