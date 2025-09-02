@@ -17,6 +17,9 @@ jobs:
     env:
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
+    outputs:
+      build_name: ${{ steps.publish_build.outputs.build_name }}
+      build_number: ${{ steps.publish_build.outputs.build_number }}
 
     steps:
     - name: Checkout code
@@ -48,7 +51,7 @@ jobs:
         jf docker buildx build --platform linux/amd64,linux/arm64 \
           --tag ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
-        jf rt build-docker-create commons-dev-docker-local  \
+        jf rt build-docker-create quotopia-dev-docker  \
           --image-file build-metadata --build-name quotopia-ui --build-number ${{ github.run_number }} 
 
     - name: Test Docker image
@@ -76,12 +79,23 @@ jobs:
         }
 
     - name: Publish buildinfo
+      id: publish_build
       run: |
         jf rt build-add-git quotopia-ui ${{ github.run_number }}
         jf rt build-publish quotopia-ui ${{ github.run_number }}
+        echo "build_name=quotopia-ui" >> $GITHUB_OUTPUT
+        echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
     - name: Add signature Evidence
       run: |
         echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
         jf evd create --build-name quotopia-ui --build-number ${{ github.run_number }} \
           --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1
+
+  create_jira_evidence:
+    needs: build-and-deploy
+    uses: ./.github/workflows/create-jira-evidence.yml
+    secrets: inherit
+    with: 
+      build_name: ${{ needs.build-and-deploy.outputs.build_name }}
+      build_number: ${{ needs.build-and-deploy.outputs.build_number }}

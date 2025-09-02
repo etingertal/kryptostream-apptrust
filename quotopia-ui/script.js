@@ -1,7 +1,8 @@
 // Quote of the day functionality
 class QuotopiaApp {
     constructor() {
-        this.baseUrl = 'http://localhost:8001/api/quotes';
+        // Use host.docker.internal to access services running on the host machine
+        this.baseUrl = 'http://host.docker.internal:8001/api/quotes';
         this.quoteTextElement = document.getElementById('quoteText');
         this.quoteAuthorElement = document.getElementById('quoteAuthor');
         this.quoteDateElement = document.getElementById('quoteDate');

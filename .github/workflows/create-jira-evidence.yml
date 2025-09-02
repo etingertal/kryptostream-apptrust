@@ -98,9 +98,12 @@ jobs:
 
       - name: Create JIRA evidence
         run: |
+          SUBJECT_PATH="quotopia-dev-docker/${{ env.BUILD_NAME }}/${{ env.BUILD_NUMBER }}/list.manifest.json"
+          echo "SUBJECT_PATH=$SUBJECT_PATH"
+
           jf evd create \
-            --build-name ${{ env.BUILD_NAME }} \
-            --build-number ${{ env.BUILD_NUMBER }} \
+            --subject-repo-path="$SUBJECT_PATH" \
             --predicate ./jira/helper/transformed_jira_data.json \
-            --predicate-type http://atlassian.com/jira/issues/v1
+            --predicate-type http://atlassian.com/jira/issues/v1 \
+            --provider-id jira
 

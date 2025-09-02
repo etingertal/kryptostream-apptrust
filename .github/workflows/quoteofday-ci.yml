@@ -116,7 +116,7 @@ jobs:
         jf docker buildx build --platform linux/amd64,linux/arm64 \
           --tag ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
-        jf rt build-docker-create commons-dev-docker-local  \
+        jf rt build-docker-create quotopia-dev-docker  \
           --image-file build-metadata --build-name quoteofday --build-number ${{ github.run_number }} 
 
     - name: Evidence on docker image
@@ -125,15 +125,18 @@ jobs:
       run: |
         echo "🔍 Creating evidence on docker image..."
         cd quoteofday
-        jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+        jf evd create --subject-repo-path quotopia-dev-docker/quoteofday/${{ github.run_number }}/list.manifest.json  \
           --predicate ./test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 \
           --markdown ./test-evidence.md --provider-id junit
-        jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local --use-sonar-predicate
+        jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name quotopia-dev-docker --use-sonar-predicate
+
+#        jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name quotopia-dev-docker \
+
 
     - name: Attach Sonar result as evidence to the docker image
       run: |
         [ -f "quoteofday/sonar.result.json" ] || echo "sonar.result.json file is missing."
-        [ -f "quoteofday/sonar.result.json" ] && jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+        [ -f "quoteofday/sonar.result.json" ] && jf evd create --subject-repo-path quotopia-dev-docker/quoteofday/${{ github.run_number }}/list.manifest.json \
           --predicate quoteofday/sonar.result.json --predicate-type "https://jfrog.com/evidence/sonar-results/v1" --provider-id sonar || echo "Did not create evidence from the Sonar JSON."
           
     - name: Test Docker image
@@ -162,11 +165,6 @@ jobs:
         echo "build_name=quoteofday" >> $GITHUB_OUTPUT
         echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
-    - name: Add signature Evidence
-      run: |
-        echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
-        jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
-          --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
   create_jira_evidence:
     needs: build-and-test

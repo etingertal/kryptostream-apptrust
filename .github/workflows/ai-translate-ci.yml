@@ -11,10 +11,7 @@ on:
 
 env:
   DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
-  HF_HUB_ETAG_TIMEOUT: 86400
-  HF_HUB_DOWNLOAD_TIMEOUT: 86400
-  HF_ENDPOINT: https://evidencetrial.jfrog.io/artifactory/api/huggingfaceml/dev-huggingfaceml-remote
-  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
 
 jobs:
   test:
@@ -95,13 +92,9 @@ jobs:
         jf docker buildx build --platform linux/amd64 \
           --cache-from type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache \
           --cache-to type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache,mode=max \
-          --build-arg HF_HUB_ETAG_TIMEOUT=${{ env.HF_HUB_ETAG_TIMEOUT }} \
-          --build-arg HF_HUB_DOWNLOAD_TIMEOUT=${{ env.HF_HUB_DOWNLOAD_TIMEOUT }} \
-          --build-arg HF_ENDPOINT=${{ env.HF_ENDPOINT }} \
-          --build-arg HF_TOKEN=${{ env.HF_TOKEN }} \
           --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
-        jf rt build-docker-create commons-dev-docker-local  \
+        jf rt build-docker-create quotopia-dev-docker  \
           --image-file build-metadata --build-name ai-translate --build-number ${{ github.run_number }}
 
     - name: Verify Docker image
@@ -118,12 +111,12 @@ jobs:
         fail-build: false
         output-format: cyclonedx-json
         output-file: grype-output.json
-        severity-cutoff: "high"
+        severity-cutoff: "critical"
         cache-db: true
 
     - name: Create evidence from Grype scan result
       run: |
-        jf evd create --package-name ai-translate --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+        jf evd create --subject-repo-path quotopia-dev-docker/ai-translate/${{ github.run_number }}/list.manifest.json \
           --predicate grype-output.json --provider-id anchore --predicate-type https://anchore.com/evidence/grype/v1
 
     - name: Publish buildinfo

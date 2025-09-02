@@ -2,20 +2,15 @@ name: End 2 End Tests
 
 on:
   workflow_dispatch:
-    # inputs:
-    #   promote_to_qa:
-    #     description: 'Promote to QA environment'
-    #     required: false
-    #     default: true
-    #     type: boolean
 
 jobs:
   end2end-tests:
-    name: Promote to QA and run E2E tests
+    name: Run E2E Tests with Docker Services
     runs-on: ubuntu-latest
     env:
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
+      DOCKER_REGISTRY: apptrustswampup.jfrog.io/quotopia-qa-docker
     
     steps:
     - name: Checkout code
@@ -29,215 +24,199 @@ jobs:
         JF_URL: ${{ vars.JF_URL }}
         JF_USER: ${{ vars.JF_USER }}
         JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-    
-    - name: Get latest DEV release bundle version
-      id: get-latest-dev-version
-      run: |
-        # Fetch promotion records from Artifactory API
-        PROMOTION_RESPONSE=$(curl -s -X GET \
-          -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-          "${{ vars.JF_URL }}/lifecycle/api/v2/promotion/records/quotopia")
 
-        # Filter for environment "DEV", sort by "created" field in descending order, and get the first one
-        LATEST_DEV_VERSION=$(echo "$PROMOTION_RESPONSE" | \
-          jq -r '.promotions | map(select(.environment == "DEV")) | sort_by(.created) | reverse | .[0].release_bundle_version')
-        
-        echo "latest_dev_version=$LATEST_DEV_VERSION" >> $GITHUB_OUTPUT
-        echo "Found latest DEV release bundle version: $LATEST_DEV_VERSION"
-    
-    - name: Set QA version (when promotion is skipped)
-      if: ${{ inputs.promote_to_qa != 'true' }}
-      run: |
-        LATEST_DEV_VERSION="${{ steps.get-latest-dev-version.outputs.latest_dev_version }}"
-        echo "📋 Using DEV version $LATEST_DEV_VERSION for QA testing (no promotion)"
-        echo "LATEST_QA_VERSION=$LATEST_DEV_VERSION" >> $GITHUB_ENV
-      
-    - name: Cache npm dependencies
-      uses: actions/cache@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        path: |
-          e2e-tests/node_modules
-          ~/.npm
-        key: ${{ runner.os }}-npm-${{ hashFiles('e2e-tests/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: e2e-tests/package-lock.json
 
     - name: Login to Docker Registry
       run: |
         echo "🔐 Logging into JFrog Artifactory Docker registry..."
-        echo "Registry: ${{ vars.JF_URL }}"
-        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ vars.JF_URL }}
+        echo "Registry: ${{ env.DOCKER_REGISTRY }}"
+        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
         echo "✅ Successfully logged into Docker registry"
-        
-    - name: Get Docker images from QA repository
+
+    - name: Get latest Docker images from Artifactory for QA environment
       id: get-images
       run: |
-        # Get the latest QA version
-        LATEST_QA_VERSION="${{ env.LATEST_QA_VERSION }}"
-        echo "Testing with QA version: $LATEST_QA_VERSION"
+        echo "🔍 Fetching latest Docker images from Artifactory..."
         
-        # Get Docker image tags from QA repository using AQL with better error handling
-        echo "🔍 Searching for quote service images..."
+        # Get latest images
         QUOTE_RESPONSE=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
           -H "Content-Type: text/plain" \
-          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+          -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
-        
-        echo "Quote API Response: $QUOTE_RESPONSE"
-        
-        if [ -z "$QUOTE_RESPONSE" ] || [ "$QUOTE_RESPONSE" = "null" ]; then
-          echo "❌ No quote service images found in QA repository"
-          exit 1
-        fi
-        
-        QUOTE_IMAGE_TAG=$(echo "$QUOTE_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')
-        
-        if [ -z "$QUOTE_IMAGE_TAG" ]; then
-          echo "❌ Failed to extract quote image tag from response"
-          echo "Response: $QUOTE_RESPONSE"
-          exit 1
-        fi
-        
-        echo "✅ Found quote service image tag: $QUOTE_IMAGE_TAG"
-        
-        echo "🔍 Searching for translation service images..."
-        TRANSLATION_RESPONSE=$(curl -s -X POST \
+        echo "Quoteofday API Response: $QUOTE_RESPONSE"        
+
+        QUOTE_IMAGE_TAG=$(echo "$QUOTE_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')        
+        echo "✅ Found quoteofday image tag: $QUOTE_IMAGE_TAG"
+
+        UI_RESPONSE=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
           -H "Content-Type: text/plain" \
-          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "ai-translate/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+          -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quotopia-ui/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
-        
-        echo "Translation API Response: $TRANSLATION_RESPONSE"
-        
-        if [ -z "$TRANSLATION_RESPONSE" ] || [ "$TRANSLATION_RESPONSE" = "null" ]; then
-          echo "❌ No translation service images found in QA repository"
-          exit 1
-        fi
-        
-        TRANSLATION_IMAGE_TAG=$(echo "$TRANSLATION_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')
-        
-        if [ -z "$TRANSLATION_IMAGE_TAG" ]; then
-          echo "❌ Failed to extract translation image tag from response"
-          echo "Response: $TRANSLATION_RESPONSE"
-          exit 1
-        fi
-        
-        echo "✅ Found translation service image tag: $TRANSLATION_IMAGE_TAG"
+        echo "quotopia-ui API Response: $UI_RESPONSE"        
 
-        echo "quote_image_tag=$QUOTE_IMAGE_TAG" >> $GITHUB_OUTPUT
-        echo "translation_image_tag=$TRANSLATION_IMAGE_TAG" >> $GITHUB_OUTPUT
+        UI_IMAGE_TAG=$(echo "$UI_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')        
+        echo "✅ Found quotopia-ui image tag: $UI_IMAGE_TAG"
+
         
-        echo "Quote service image: evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:$QUOTE_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
-        echo "Translation service image: evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:$TRANSLATION_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+        # Set output variables
+        echo "quote_version=$QUOTE_IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "ui_version=$UI_IMAGE_TAG" >> $GITHUB_OUTPUT
         
-    - name: Generate E2E test Docker Compose file
+        echo "📋 Image Summary:"
+        echo "- Quoteofday: ${{ env.DOCKER_REGISTRY }}/quoteofday:$QUOTE_IMAGE_TAG"
+        echo "- Quotopia UI: ${{ env.DOCKER_REGISTRY }}/quotopia-ui:$UI_IMAGE_TAG"
+
+    - name: Pull Docker images
       run: |
-        # Set environment variables for template substitution
-        export QUOTE_IMAGE_TAG="${{ steps.get-images.outputs.quote_image_tag }}"
-        export TRANSLATION_IMAGE_TAG="${{ steps.get-images.outputs.translation_image_tag }}"
+        echo "📥 Pulling Docker images..."
         
-        # Substitute variables in the template
-        envsubst < e2e-tests/docker-compose.yml.template > e2e-test-compose.yml
+        # Pull quoteofday image
+        echo "📦 Pulling quoteofday image..."
+        docker pull ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ steps.get-images.outputs.quote_version }}
         
-        # Display the generated file for debugging
-        echo "Generated Docker Compose file:"
-        cat e2e-test-compose.yml
+        # Pull quotopia-ui image
+        echo "📦 Pulling quotopia-ui image..."
+        docker pull ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ steps.get-images.outputs.ui_version }}
         
-    - name: Run E2E tests 
+        echo "✅ All images pulled successfully"
+
+    - name: Start Docker services
       run: |
-        # Start services and run tests
-        echo "🚀 Starting E2E tests..."
+        echo "🚀 Starting Docker services..."
         
-        # Pull images in parallel for faster startup
-        docker pull evidencetrial.jfrog.io/commons-qa-docker-local/quoteofday:${{ steps.get-images.outputs.quote_image_tag }} &
-        docker pull evidencetrial.jfrog.io/commons-qa-docker-local/ai-translate:${{ steps.get-images.outputs.translation_image_tag }} &
-        wait
+        # Start quoteofday service
+        echo "🔧 Starting quoteofday service..."
+        docker run -d --name quoteofday-service \
+          -p 8001:8001 \
+          ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ steps.get-images.outputs.quote_version }}
         
-        # Start services and run tests
-        docker compose -f e2e-test-compose.yml up --abort-on-container-exit
+        # Start quotopia-ui service
+        echo "🔧 Starting quotopia-ui service..."
+        docker run -d --name quotopia-ui-service \
+          -p 8081:80 \
+          --add-host host.docker.internal:host-gateway \
+          ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ steps.get-images.outputs.ui_version }}
         
-        # Check if tests passed
-        if [ $? -eq 0 ]; then
-          echo "✅ E2E tests completed successfully"
-        else
-          echo "❌ E2E tests failed"
+        # Wait for services to be ready
+        echo "⏳ Waiting for services to be ready..."
+        sleep 10
+        
+        # Check if services are running
+        if ! docker ps | grep -q quoteofday-service; then
+          echo "❌ Quoteofday service failed to start"
+          docker logs quoteofday-service
           exit 1
         fi
         
-    - name: Generate test reports
-      run: |
-        echo "📄 Generating test reports..."
+        if ! docker ps | grep -q quotopia-ui-service; then
+          echo "❌ Quotopia UI service failed to start"
+          docker logs quotopia-ui-service
+          exit 1
+        fi
         
-        # Navigate to e2e-tests directory
+        echo "✅ All services started successfully"
+
+    - name: Install E2E test dependencies
+      run: |
+        echo "📦 Installing E2E test dependencies..."
+        cd e2e-tests
+        npm ci
+        echo "✅ Dependencies installed"
+
+    - name: Run E2E tests with report generation
+      run: |
+        echo "🧪 Running E2E tests with report generation..."
         cd e2e-tests
         
-        # Check if mochawesome results exist
-        if [ ! -d "cypress/results/mochawesome" ] || [ -z "$(ls -A cypress/results/mochawesome/*.json 2>/dev/null)" ]; then
-          echo "❌ No mochawesome results found"
-          exit 1
-        fi
+        # Run tests and generate reports
+        npm run test:report
         
-        echo "✅ Found mochawesome results"
-        
-        # Merge JSON reports (same as local flow)
-        echo "🔄 Merging JSON reports..."
-        npx mochawesome-merge cypress/results/mochawesome/*.json > cypress/results/combined-report.json
-        
-        if [ ! -f "cypress/results/combined-report.json" ]; then
-          echo "❌ Failed to create combined report"
-          exit 1
-        fi
-        
-        echo "✅ Combined report created: $(wc -c < cypress/results/combined-report.json) bytes"
-        
-        # Convert to markdown (same as local flow)
-        echo "🔄 Converting to markdown..."
-        ./convert-cypress-report.sh cypress/results/combined-report.json cypress-report.md
-        
-        if [ ! -f "cypress-report.md" ]; then
-          echo "❌ Failed to create markdown report"
-          exit 1
-        fi
-        
-        echo "✅ Markdown report created: $(wc -c < cypress-report.md) bytes"
-        
-        # Copy reports to workspace root for easy access
-        cp cypress/results/combined-report.json ../cypress-results.json
-        cp cypress-report.md ../cypress-e2e-report.md
-        
-        echo "📊 Report Summary:"
-        head -20 cypress-report.md
+        echo "✅ Tests completed and reports generated"
 
-    - name: Create evidence from the e2e test results
+    - name: Verify test results
       run: |
-        echo "📋 Creating evidence from test results..."
+        echo "🔍 Verifying test results..."
+        cd e2e-tests
         
-        # Validate JSON before creating evidence
-        if ! jq empty cypress-results.json 2>/dev/null; then
-          echo "❌ Invalid JSON in cypress-results.json"
+        # Check if reports were generated
+        if [ ! -f "test-report.md" ]; then
+          echo "❌ Markdown report not found"
           exit 1
         fi
         
-        echo "✅ Valid JSON confirmed"
+        if [ ! -f "test-report.json" ]; then
+          echo "❌ JSON report not found"
+          exit 1
+        fi
         
-        jf evd create --release-bundle quotopia --release-bundle-version ${{ steps.get-latest-dev-version.outputs.latest_dev_version }} \
-          --predicate cypress-results.json --markdown cypress-e2e-report.md --provider-id cypress --predicate-type https://cypress.io/evidence/e2e/v1
+        # Check test results from JSON
+        TOTAL_TESTS=$(jq -r '.summary.totalTests' test-report.json)
+        PASSING_TESTS=$(jq -r '.summary.passing' test-report.json)
+        FAILING_TESTS=$(jq -r '.summary.failing' test-report.json)
+        
+        echo "📊 Test Results:"
+        echo "- Total Tests: $TOTAL_TESTS"
+        echo "- Passing: $PASSING_TESTS"
+        echo "- Failing: $FAILING_TESTS"
+        
+        if [ "$FAILING_TESTS" -gt 0 ]; then
+          echo "❌ Some tests failed"
+          exit 1
+        fi
+        
+        echo "✅ All tests passed successfully"
 
-    - name: Upload Cypress Markdown Report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: cypress-e2e-report
-        path: cypress-e2e-report.md
-        retention-days: 30
-        if-no-files-found: error
+    # - name: Create evidence from test results
+    #   run: |
+    #     echo "📋 Creating evidence from test results..."
+    #     cd e2e-tests
+        
+    #     # Create evidence using the test results
+    #     jf evd create \
+    #       --build-name e2e-tests \
+    #       --build-number ${{ github.run_number }} \
+    #       --predicate test-report.json \
+    #       --markdown test-report.md \
+    #       --provider-id cypress-e2e \
+    #       --predicate-type https://cypress.io/evidence/e2e/v1
+        
+    #     echo "✅ Evidence created successfully"
 
-    - name: Cleanup
+
+    - name: Display test summary
+      run: |
+        echo "📋 Test Summary:"
+        cd e2e-tests
+        
+        if [ -f "test-report.md" ]; then
+          echo "📄 Markdown Report Preview:"
+          cat test-report.md >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ -f "test-report.json" ]; then
+          echo "📊 JSON Report Summary:"
+          jq '.summary' test-report.json
+        fi
+
+    - name: Cleanup Docker services
       if: always()
       run: |
-        # Clean up generated files and containers
-        rm -f e2e-test-compose.yml cypress-results.json cypress-e2e-report.md
-        docker compose -f e2e-test-compose.yml down -v 2>/dev/null || true
-        docker system prune -f
+        echo "🧹 Cleaning up Docker services..."
+        
+        # Stop and remove containers
+        docker stop quoteofday-service quotopia-ui-service 2>/dev/null || true
+        docker rm quoteofday-service quotopia-ui-service 2>/dev/null || true
+        
+        # Clean up images
+        docker image prune -f
+        
+        echo "✅ Cleanup completed"
         

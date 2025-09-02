@@ -8,33 +8,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
+    <div class="container" data-testid="quotopia-container">
+        <header class="header" data-testid="quotopia-header">
             <div class="banner-image">
-                <img src="quotopia.png" alt="Quotopia Banner" class="full-width-banner">
+                <img src="quotopia.png" alt="Quotopia Banner" class="full-width-banner" data-testid="quotopia-banner">
             </div>
         </header>
 
-        <main class="main-content">
-            <div class="quote-container">
-                <div class="quote-card">
-                    <blockquote class="quote-text" id="quoteText">
+        <main class="main-content" data-testid="quotopia-main">
+            <div class="quote-container" data-testid="quote-container">
+                <div class="quote-card" data-testid="quote-card">
+                    <blockquote class="quote-text" id="quoteText" data-testid="quote-text">
                         Loading today's inspiration...
                     </blockquote>
-                    <cite class="quote-author" id="quoteAuthor">
+                    <cite class="quote-author" id="quoteAuthor" data-testid="quote-author">
                         —
                     </cite>
-                    <div class="quote-date" id="quoteDate"></div>
+                    <div class="quote-date" id="quoteDate" data-testid="quote-date"></div>
                 </div>
             </div>
         </main>
 
-        <footer class="footer">
-            <div class="date-selector-container">
-                <label for="dateSelector" class="date-label">Select a different date:</label>
-                <input type="date" id="dateSelector" class="date-input" max="2025-12-31">
+        <footer class="footer" data-testid="quotopia-footer">
+            <div class="date-selector-container" data-testid="date-selector-container">
+                <label for="dateSelector" class="date-label" data-testid="date-label">Select a different date:</label>
+                <input type="date" id="dateSelector" class="date-input" max="2025-12-31" data-testid="date-selector">
             </div>
-            <p>Powered by inspiration • Refreshed daily</p>
+            <p data-testid="footer-text">Powered by inspiration • Refreshed daily</p>
         </footer>
     </div>
 
