@@ -89,7 +89,7 @@ jobs:
             local BUILD_VER="$2"
             local DEPLOYMENT_FILE="argocd/manifests/deployment-$BUILD_NAME.yaml"
             if [ ! -f "$DEPLOYMENT_FILE" ]; then
-              echo "$DEPLOYMENT_FILE doesn't exist. Skipping.
+              echo "$DEPLOYMENT_FILE doesn't exist. Skipping."
               return 0
             fi
             echo "Replacing version in file $DEPLOYMENT_FILE to $BUILD_VER"
