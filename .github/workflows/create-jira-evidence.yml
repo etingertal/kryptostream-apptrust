@@ -91,7 +91,6 @@ jobs:
             ./main ${{ steps.build_info.outputs.jira_ids }}
           else
             echo "No JIRA IDs to process"
-            echo '{"tasks": []}' > transformed_jira_data.json
           fi
           cd -
 
@@ -101,9 +100,13 @@ jobs:
           SUBJECT_PATH="quotopia-dev-docker/${{ env.BUILD_NAME }}/${{ env.BUILD_NUMBER }}/list.manifest.json"
           echo "SUBJECT_PATH=$SUBJECT_PATH"
 
-          jf evd create \
-            --subject-repo-path="$SUBJECT_PATH" \
-            --predicate ./jira/helper/transformed_jira_data.json \
-            --predicate-type http://atlassian.com/jira/issues/v1 \
-            --provider-id jira
+          if [ -f ./jira/helper/transformed_jira_data.json ]; then
+            jf evd create \
+              --subject-repo-path="$SUBJECT_PATH" \
+              --predicate ./jira/helper/transformed_jira_data.json \
+              --predicate-type http://atlassian.com/jira/issues/v1 \
+              --provider-id jira
+          else 
+            echo "Not creating a Jira evidence since no Jira IDs were found for this build."
+          fi
 
