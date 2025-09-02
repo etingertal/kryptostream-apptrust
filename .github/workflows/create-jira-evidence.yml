@@ -100,15 +100,16 @@ jobs:
         run: |
           jf plugin install rt-fs
           ALL_BUILDS_LEADING_FILES=$(jf rt-fs ls artifactory-build-info/${{ env.BUILD_NAME }})
-          echo "ALL_BUILDS_LEADING_FILES=$ALL_BUILDS_LEADING_FILES"
+          #echo "ALL_BUILDS_LEADING_FILES=$ALL_BUILDS_LEADING_FILES"
           GREP_EXPR="${{ env.BUILD_NUMBER }}-"
-          echo "GREP_EXPR=$GREP_EXPR"
+          #echo "GREP_EXPR=$GREP_EXPR"
           BUILD_LEADING_FILE=$(echo "$ALL_BUILDS_LEADING_FILES" | grep "$GREP_EXPR")
           echo "BUILD_LEADING_FILE=$BUILD_LEADING_FILE"
+          SUBJECT_PATH="artifactory-build-info/${{ env.BUILD_NAME }}/$BUILD_LEADING_FILE"
+          echo "SUBJECT_PATH=$SUBJECT_PATH"
 
           jf evd create \
-            --build-name ${{ env.BUILD_NAME }} \
-            --build-number ${{ env.BUILD_NUMBER }} \
+            --subject-repo-path="$SUBJECT_PATH"
             --predicate ./jira/helper/transformed_jira_data.json \
             --predicate-type http://atlassian.com/jira/issues/v1 \
             --provider-id jira
