@@ -108,3 +108,5 @@ jobs:
             [ $? -ne 0 ] && echo "Edit deployment $name $number failed." && exit 1
           done
 
+          git diff
+
