@@ -109,7 +109,7 @@ jobs:
           echo "SUBJECT_PATH=$SUBJECT_PATH"
 
           jf evd create \
-            --subject-repo-path="$SUBJECT_PATH"
+            --subject-repo-path="$SUBJECT_PATH" \
             --predicate ./jira/helper/transformed_jira_data.json \
             --predicate-type http://atlassian.com/jira/issues/v1 \
             --provider-id jira
