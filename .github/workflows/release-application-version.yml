@@ -93,7 +93,7 @@ jobs:
               return 0
             fi
             echo "Replacing version in file $DEPLOYMENT_FILE to $BUILD_VER"
-            sed -i "s|quotopia-prod-docker/${BUILD_NAME}:[0-9]*|quotopia-prod-docker/${BUILD_NAME}:${BUILD_VER}|g" "DEPLOYMENT_FILE"
+            sed -i "s|quotopia-prod-docker/${BUILD_NAME}:[0-9]*|quotopia-prod-docker/${BUILD_NAME}:${BUILD_VER}|g" "$DEPLOYMENT_FILE"
           }
 
           echo "Received result:"
@@ -105,5 +105,6 @@ jobs:
             number=$(echo "$build_info" | jq -r '.number')
             echo "Found build with name: $name and number: $number"
             editDeployment "$name" "$number"
+            [ $? -ne 0 ] && echo "Edit deployment $name $number failed." && exit 1
           done
 
