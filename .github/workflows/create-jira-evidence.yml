@@ -99,7 +99,8 @@ jobs:
       - name: Create JIRA evidence
         run: |
           jf plugin install rt-fs
-          jf rt-fs ls artifactory-build-info/${{ env.BUILD_NAME }} 
+          BUILD_LEADING_FILE=$(jf rt-fs ls artifactory-build-info/${{ env.BUILD_NAME }} | grep -E "^${{ env.BUILD_NUMBER }}-")
+          echo "BUILD_LEADING_FILE=$BUILD_LEADING_FILE"
 
           jf evd create \
             --build-name ${{ env.BUILD_NAME }} \
