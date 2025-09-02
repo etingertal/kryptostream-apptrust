@@ -75,12 +75,12 @@ jobs:
           APP_VER=${{ steps.get_app_ver.outputs.app_ver }}
           URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/content?include=sources"
           echo "Requesting: $URL" 
-          STATUS_CODE=$(curl -s -o result.json -w "%{http_code}" -X GET -H "Authorization: Bearer $JF_ACCESS_TOKEN" "URL")
+          STATUS_CODE=$(curl -s -o result.json -w "%{http_code}" -X GET -H "Authorization: Bearer $JF_ACCESS_TOKEN" "$URL")
 
           if [ "$STATUS_CODE" != "200" ]; then
             echo "Reuquest failed with code $STATUS_CODE"
             # Running again without silent to see errors
-            curl -X GET -H "Authorization: Bearer $JF_ACCESS_TOKEN" "URL"
+            curl -X GET -H "Authorization: Bearer $JF_ACCESS_TOKEN" "$URL"
             exit 1
           fi
 
