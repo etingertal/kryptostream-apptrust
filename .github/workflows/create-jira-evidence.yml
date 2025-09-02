@@ -98,14 +98,7 @@ jobs:
 
       - name: Create JIRA evidence
         run: |
-          jf plugin install rt-fs
-          ALL_BUILDS_LEADING_FILES=$(jf rt-fs ls artifactory-build-info/${{ env.BUILD_NAME }})
-          #echo "ALL_BUILDS_LEADING_FILES=$ALL_BUILDS_LEADING_FILES"
-          GREP_EXPR="${{ env.BUILD_NUMBER }}-"
-          #echo "GREP_EXPR=$GREP_EXPR"
-          BUILD_LEADING_FILE=$(echo "$ALL_BUILDS_LEADING_FILES" | grep "$GREP_EXPR")
-          echo "BUILD_LEADING_FILE=$BUILD_LEADING_FILE"
-          SUBJECT_PATH="artifactory-build-info/${{ env.BUILD_NAME }}/$BUILD_LEADING_FILE"
+          SUBJECT_PATH="quotopia-dev-docker/${{ env.BUILD_NAME }}/${{ env.BUILD_NUMBER }}/list.manifest.json"
           echo "SUBJECT_PATH=$SUBJECT_PATH"
 
           jf evd create \
