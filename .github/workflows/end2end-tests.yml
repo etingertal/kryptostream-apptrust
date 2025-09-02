@@ -10,7 +10,7 @@ jobs:
     env:
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
-      DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
+      DOCKER_REGISTRY: apptrustswampup.jfrog.io/quotopia-qa-docker
     
     steps:
     - name: Checkout code
@@ -47,7 +47,7 @@ jobs:
         # Get latest images
         QUOTE_RESPONSE=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-          -H "Content-Type: application/json" \
+          -H "Content-Type: text/plain" \
           -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
         echo "Quoteofday API Response: $QUOTE_RESPONSE"        
@@ -57,7 +57,7 @@ jobs:
 
         UI_RESPONSE=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-          -H "Content-Type: application/json" \
+          -H "Content-Type: text/plain" \
           -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quotopia-ui/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
         echo "quotopia-ui API Response: $UI_RESPONSE"        

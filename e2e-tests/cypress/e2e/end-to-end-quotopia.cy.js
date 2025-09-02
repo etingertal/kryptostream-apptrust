@@ -77,7 +77,7 @@ describe('Quotopia End-to-End Tests', () => {
     
     cy.get('[data-testid="footer-text"]')
       .should('be.visible')
-      .and('contain', 'Powered by inspiration • Refreshed daily')
+      .and('contain', 'Powered by inspiration • Refreshed every day')
   })
 
   it('should verify quote service API is accessible', () => {

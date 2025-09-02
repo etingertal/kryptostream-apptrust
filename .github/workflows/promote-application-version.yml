@@ -2,11 +2,6 @@ name: Promote Application
 
 on:
   workflow_dispatch:
-    inputs:
-      target_stage:
-        description: 'Target promotion stage (e.g., DEV, QA, Staging, PROD)'
-        required: true
-        default: 'QA'
 
 jobs:
   promote-application:
@@ -17,7 +12,10 @@ jobs:
       JF_USER: ${{ vars.JF_USER }}
       JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
       APP_ID: quotopia-app
-      TARGET_STAGE: ${{ github.event.inputs.target_stage }}
+      TARGET_STAGE: 'QA'
+      JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
+      JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
+      DOCKER_REGISTRY: apptrustswampup.jfrog.io/quotopia-qa-docker
 
     steps:
       - name: Checkout code
