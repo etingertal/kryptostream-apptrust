@@ -48,7 +48,7 @@ jobs:
         QUOTE_RESPONSE=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
           -H "Content-Type: application/json" \
-          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+          -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
         echo "Quoteofday API Response: $QUOTE_RESPONSE"        
 
@@ -58,7 +58,7 @@ jobs:
         UI_RESPONSE=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
           -H "Content-Type: application/json" \
-          -d 'items.find({"repo": "commons-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "quotopia-ui/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+          -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quotopia-ui/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
         echo "quotopia-ui API Response: $UI_RESPONSE"        
 
