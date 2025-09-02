@@ -165,7 +165,7 @@ jobs:
     - name: Attach Sonar result as evidence to the docker image
       run: |
         [ -f "quoteofday/sonar.result.json" ] || echo "sonar.result.json file is missing."
-        [ -f "quoteofday/sonar.result.json" ] && jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name commons-dev-docker-local \
+        [ -f "quoteofday/sonar.result.json" ] && jf evd create --subject-repo-path quotopia-dev-docker/quoteofday/${{ github.run_number }}/list.manifest.json \
           --predicate quoteofday/sonar.result.json --predicate-type "https://jfrog.com/evidence/sonar-results/v1" --provider-id sonar || echo "Did not create evidence from the Sonar JSON."
           
     - name: Test Docker image
@@ -191,9 +191,4 @@ jobs:
         jf rt build-add-git quoteofday ${{ github.run_number }}
         jf rt build-publish quoteofday ${{ github.run_number }}
 
-    - name: Add signature Evidence
-      run: |
-        echo '{"user":"${{ github.actor }}", "date":"'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > sign.json
-        jf evd create --build-name quoteofday --build-number ${{ github.run_number }} \
-          --predicate sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
 
