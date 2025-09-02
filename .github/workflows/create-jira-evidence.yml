@@ -98,9 +98,12 @@ jobs:
 
       - name: Create JIRA evidence
         run: |
+          jf rt search artifactory-build-info/${{ env.BUILD_NAME }} 
+
           jf evd create \
             --build-name ${{ env.BUILD_NAME }} \
             --build-number ${{ env.BUILD_NUMBER }} \
             --predicate ./jira/helper/transformed_jira_data.json \
-            --predicate-type http://atlassian.com/jira/issues/v1
+            --predicate-type http://atlassian.com/jira/issues/v1 \
+            --provider-id jira
 
