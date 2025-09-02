@@ -2,6 +2,8 @@ name: Quotopia UI Service CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'quotopia-ui/**'
       - '.github/workflows/quotopia-ui-ci.yml'
