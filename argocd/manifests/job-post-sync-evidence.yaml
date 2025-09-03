@@ -16,6 +16,8 @@ spec:
         secret:
           secretName: evd-signing-key
       containers:
+      - name: bash-runner
+        image: ubuntu:latest
         volumeMounts:
         - name: jf-secrets-volume
           mountPath: /etc/jfsecrets
@@ -23,8 +25,6 @@ spec:
         - name: signing-key
           mountPath: /etc/signkey
           readOnly: true
-        - name: bash-runner
-          image: ubuntu:latest
         command: ["/bin/bash", "-c"]
         args:
           - |
