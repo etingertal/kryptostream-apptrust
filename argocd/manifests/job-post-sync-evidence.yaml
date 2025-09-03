@@ -155,8 +155,22 @@ spec:
             cat predicate.json
 
             echo "$MARKDOWN" > markdown.md
-            echo "Markdown files:"
+            echo "Markdown file before:"
             cat markdown.md
+            echo
+
+            jq -r '
+              . as $json |
+              paths(scalars) as $p |
+              "{{.\($p | join("."))}} = \($json | getpath($p))"
+            ' predicate.json | while IFS='=' read -r key value; do
+              key=$(echo "$key" | xargs)
+              value=$(echo "$value" | sed 's/^"//;s/"$//') 
+              sed -i "s|${key}|${value}|g" markdown.md
+            done
+
+            echo "Markdown file after:"
+            car markdown.md
             echo
 
             echo "Running jf evd create"
