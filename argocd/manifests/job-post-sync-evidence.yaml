@@ -37,7 +37,7 @@ spec:
 
               ### Running Pods
               The following pods were found running at the time of evaluation:
-              {{ runningPods }}
+              {{ .runningPods[] }}
         command: ["/bin/bash", "-c"]
         args:
           - |
@@ -153,21 +153,28 @@ spec:
             echo "Predicate:"
             cat predicate.json
 
-            echo "$MARKDOWN" > markdown.md
             echo "Markdown file before:"
-            cat markdown.md
+            echo "$MARKDOWN"
             echo
 
-            jq -r '
-              . as $json |
-              paths(scalars) as $p |
-              "{{.\($p | join("."))}} = \($json | getpath($p))"
-            ' predicate.json | while IFS='=' read -r key value; do
-              key=$(echo "$key" | xargs)
-              value=$(echo "$value" | sed 's/^"//;s/"$//') 
-              sed -i "s|${key}|${value}|g" markdown.md
-            done
+            # Editing MARKDOWN with values from EVIDENCE
+            MAX_ITER=30                                                                     
+            CUR_ITER=0                                                                      
+            while [[ "$MARKDOWN" =~ \{\{([^}]+)\}\} ]]; do                                  
+              ((CUR_ITER=CUR_ITER+1))                                                       
+              if [ "$CUR_ITER" -gt "$MAX_ITER" ]; then                                      
+                echo "Too many iterations."                                                 
+                exit 1                                                                      
+              fi                                                                            
+              MATCHED_PLACEHOLDER="${BASH_REMATCH[0]}"                                      
+              KEY="${BASH_REMATCH[1]}"                                                      
+              #echo "KEY=$KEY"                                                               
+              VALUE=$(echo "$EVIDENCE" | jq "$KEY" | tr -d '"')                                 
+              #echo "VALUE=$VALUE"                                                           
+              MARKDOWN=${MARKDOWN/"$MATCHED_PLACEHOLDER"/"$VALUE"}                          
+            done            
 
+            echo "$MARKDOWN" > markdown.md
             echo "Markdown file after:"
             cat markdown.md
             echo
