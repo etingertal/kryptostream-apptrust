@@ -96,15 +96,24 @@ spec:
             curl -fL https://install-cli.jfrog.io | sh
 
             # Configure JSON CLI
-            CI=true
-            JFROG_CLI_URL="https://apptrustswampup.jfrog.io"
-            JFROG_CLI_TOKEN=$(cat /etc/jfsecrets/JF_TOKEN)
+            export CI="true"
+            export JFROG_CLI_URL="https://apptrustswampup.jfrog.io"
+            export JFROG_CLI_TOKEN=$(cat /etc/jfsecrets/JF_TOKEN)
             if [ "" == "$JFROG_CLI_TOKEN" ]; then
                 echo "JF_TOKEN secret is empty."
                 exit 1
             fi
 
-            echo "Pinging JFrog platform."
+            echo "Adding configuration to JF CLI."
+            jf c add apptrustswampup --interactive=false --overwrite=true --url "$JFROG_CLI_URL" --access-token "$JFROG_CLI_TOKEN"
+            if [ $? -ne 0 ]; then
+                "Failed to configure JF CLI."
+                exit 1
+            fi
+            jf c show
+
+
+            echo "Pinging JFrog platform $JFROG_CLI_URL"
             jf rt ping
             if [ $? -ne 0 ]; then
                 echo "jf rt ping failed (JFROG_CLI_URL=$JFROG_CLI_URL)."
