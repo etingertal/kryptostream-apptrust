@@ -140,7 +140,7 @@ spec:
             echo "Predicate:"
             cat predicate.json
 
-            MARKDOWN="### Deployment Evidence
+            MARKDOWN='### Deployment Evidence
 
                         ### Summary
                         - **Deployment State:** {{ .deploymentState }}
@@ -150,7 +150,7 @@ spec:
                         ### Running Pods
                         The following pods were found running at the time of evaluation:
                         {{ range .runningPods }}
-                        - `{{ . }}`{{ end }}"
+                        - `{{ . }}`{{ end }}'
 
             echo "$MARKDOWN" > markdown.md
 
