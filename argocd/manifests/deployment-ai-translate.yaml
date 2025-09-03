@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: ai-translate-container
-        image: apptrustswampup.jfrog.io/quotopia-prod-docker/ai-translate:70 
+        image: apptrustswampup.jfrog.io/quotopia-prod-docker/ai-translate:71 
         ports:
         - containerPort: 8080
       imagePullSecrets:
