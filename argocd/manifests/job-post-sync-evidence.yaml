@@ -140,8 +140,26 @@ spec:
             echo "Predicate:"
             cat predicate.json
 
+            MARKDOWN="### Deployment Evidence
+
+                        ### Summary
+                        - **Deployment State:** {{ .deploymentState }}
+                        - **Kubernetes Cluster ID:** `{{ .k8sClusterId }}`
+                        - **Time:** `{{ .time }}`
+
+                        ### Running Pods
+                        The following pods were found running at the time of evaluation:
+                        {{ range .runningPods }}
+                        - `{{ . }}`{{ end }}"
+
+            echo "$MARKDOWN" > markdown.md
+
             echo "Running jf evd create"
-            jf evd create --project quotopia --release-bundle "$EVD_DEMO_APP_NAME" --release-bundle-version "$EVD_DEMO_APP_VER" --predicate predicate.json --predicate-type 'http://jfrog.com/argocd/v1' --key-alias argocd --key "$SIGN_KEY"
+            jf evd create --project quotopia --release-bundle "$EVD_DEMO_APP_NAME" \
+                --release-bundle-version "$EVD_DEMO_APP_VER" --predicate predicate.json \
+                --predicate-type 'http://jfrog.com/argocd/v1' \
+                --key-alias argocd --key "$SIGN_KEY" \
+                --markdown markdown.md
 
       restartPolicy: Never
       serviceAccountName: default
