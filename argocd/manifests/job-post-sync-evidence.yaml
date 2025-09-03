@@ -1,0 +1,119 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: post-sync-job-evidence
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    volumes:
+    - name: jf-secrets-volume
+      secret:
+        secretName: apptrustswampup-jf-cli
+    - name: signing-key
+      secret:
+        secretName: evd-signing-key
+    spec:
+      volumeMounts:
+      - name: jf-secrets-volume
+        mountPath: /etc/jfsecrets
+        readOnly: true
+      - name: signing-key
+        mountPath: /etc/signkey
+        readOnly: true
+      containers:
+      - name: bash-runner
+        image: ubuntu:latest
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            # These 2 below will be automatically replaced by the release-application-version.yml GitHub workflow
+            EVD_DEMO_APP_NAME=quotopia-app
+            EVD_DEMO_APP_VER=30
+
+            # Install jq
+            echo "Installing jq"
+            apt-get update -y 1>/dev/null 2>/dev/null
+            apt-get install -y jq
+            if [ $? -ne 0 ]; then
+                echo "Failed to install jq"
+                exit 1
+            fi
+
+            # Install kubctl
+            K8S_URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+            echo "Downloading k8s: $K8S_URL"
+            curl -LO "$K8S_URL" 
+            if [ $? -ne 0 ]; then
+                echo "Failed to download k8s."
+                exit 1
+            fi
+            install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+            if [ $? -ne 0 ]; then
+                echo "Failed to install k8s.
+                exit 1
+            fi
+            # Check client installation
+            kubectl version --client
+            if [ $? -ne 0 ]; then
+                echo "Failed to validate kubectl client (run kubectl version --client)."
+                exit 1
+            fi
+            # Test connection to the k8s cluster
+            kubectl get po
+            if [ $? -ne 0 ]; then
+                echo "Failed to test kubectl connection to the k8s cluster (run kubectl get po)."
+                exit 1
+            fi
+
+            # Install jfrog CLI
+            curl -fL https://install-cli.jfrog.io | sh
+
+            # Configure JSON CLI
+            JFROG_CLI_URL="https://apptrustswampup.jfrog.io"
+            JFROG_CLI_TOKEN=$(cat /etc/jfsecrets/JF_TOKEN)
+            if [ "" == "$JFROG_CLI_TOKEN" ]; then
+                echo "JF_TOKEN secret is empty."
+                exit 1
+            fi
+
+            jf rt ping
+            if [ $? -ne 0 ]; then
+                echo "jf rt ping failed (JFROG_CLI_URL=$JFROG_CLI_URL). 
+                exit 1
+            fi
+
+            SIGN_KEY=$(cat /etc/signkey/SIGNING_KEY)
+            if [ "" == "$SIGN_KEY" ]; then
+                echo "Signing key is empty."
+                exit 1
+            fi
+
+            is_valid_json_array() {
+                echo "$1" | jq -e 'if type == "array" then empty else error("not an array") end' > /dev/null 2>&1
+                return $?
+            }
+
+            CLUSTER_ID=$(kubectl get namespace kube-system -o=jsonpath='{.metadata.uid}')
+            RUNNING_PODS=$(kubectl -n quotopia get pods |  jq '[.items[].metadata.name]')
+
+            echo "RUNNING_PODS=$RUNNING_PODS"
+
+            if ! is_valid_json_array "$RUNNING_PODS"; then
+                RUNNING_PODS='[]'
+            fi
+
+            echo "EVD_DEMO_APP_NAME=$EVD_DEMO_APP_NAME, EVD_DEMO_APP_VER=$EVD_DEMO_APP_VER, CLUSTER_ID=$CLUSTER_ID"
+
+            EVIDENCE="{\"deploymentState\":\"DEPLOYED\", \"time\":\"$(date)\", \"k8sClusterId\":\"$CLUSTER_ID\", \"runningPods\":$RUNNING_PODS}"
+            echo "$EVIDENCE" > predicate.json
+
+            echo "Predicate:"
+            cat predicate.json
+
+            echo "Running jf evd create"
+            jf evd create --project quotopia --release-bundle "$EVD_DEMO_APP_NAME" --release-bundle-version "$EVD_DEMO_APP_VER" --predicate predicate.json --predicate-type 'http://jfrog.com/argocd/v1' --key-alias argocd --key "$SIGN_KEY"
+
+      restartPolicy: Never
+      serviceAccountName: default
