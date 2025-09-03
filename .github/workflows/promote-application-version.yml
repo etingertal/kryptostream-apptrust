@@ -119,12 +119,13 @@ jobs:
             name=$(echo "$build_info" | jq -r '.name')                          
             number=$(echo "$build_info" | jq -r '.number')                      
             echo "Found build with name: $name and number: $number"
-            [ "$name" == "quoteofday" ] && QUOTE_NUM="$number"
-            [ "$name" == "quotopia-ui" ] && UI_NUM="$number"
+            [ "$name" == "quoteofday" ] && export QUOTE_NUM="$number"
+            [ "$name" == "quotopia-ui" ] && export UI_NUM="$number"
           done              
         
           if [ "" == "$QUOTE_NUM" -o "" == "$UI_NUM" ]; then
-            echo "quoteofday or quitopoia-ui version (or both) could not be found."
+            echo "quoteofday or quotopoia-ui version (or both) could not be found."
+            echo "QUOTE_NUM=$QUOTE_NUM UI_NUM=$UI_NUM"
             exit 1
           fi
 
