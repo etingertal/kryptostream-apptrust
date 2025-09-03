@@ -52,7 +52,7 @@ spec:
             # Install jq
             echo "Installing jq"
             apt-get update -y 1>/dev/null 2>/dev/null
-            apt-get install -y jq
+            apt-get install -q -y jq
             if [ $? -ne 0 ]; then
                 echo "Failed to install jq"
                 exit 1
@@ -133,7 +133,7 @@ spec:
             }
 
             CLUSTER_ID=$(kubectl get namespace kube-system -o=jsonpath='{.metadata.uid}')
-            RUNNING_PODS=$(kubectl -n quotopia get pods |  jq '[.items[].metadata.name]')
+            RUNNING_PODS=$(kubectl -n quotopia get pods -o json |  jq '[.items[].metadata.name]')
 
             echo "RUNNING_PODS=$RUNNING_PODS"
 
