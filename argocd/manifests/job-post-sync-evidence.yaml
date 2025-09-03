@@ -96,6 +96,7 @@ spec:
             curl -fL https://install-cli.jfrog.io | sh
 
             # Configure JSON CLI
+            CI=true
             JFROG_CLI_URL="https://apptrustswampup.jfrog.io"
             JFROG_CLI_TOKEN=$(cat /etc/jfsecrets/JF_TOKEN)
             if [ "" == "$JFROG_CLI_TOKEN" ]; then
@@ -103,11 +104,13 @@ spec:
                 exit 1
             fi
 
+            echo "Pinging JFrog platform."
             jf rt ping
             if [ $? -ne 0 ]; then
-                echo "jf rt ping failed (JFROG_CLI_URL=$JFROG_CLI_URL). 
+                echo "jf rt ping failed (JFROG_CLI_URL=$JFROG_CLI_URL)."
                 exit 1
             fi
+            echo "Pinged JFrog platform successfully."
 
             SIGN_KEY=$(cat /etc/signkey/SIGNING_KEY)
             if [ "" == "$SIGN_KEY" ]; then
