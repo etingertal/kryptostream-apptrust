@@ -43,8 +43,8 @@ spec:
         args:
           - |
             # These 2 below will be automatically replaced by the release-application-version.yml GitHub workflow
-            quotopia-app=quotopia-app
-            34=30
+            EVD_DEMO_APP_NAME=quotopia-app
+            EVD_DEMO_APP_VER=30
 
             echo "JF secrets:"
             ls -l /etc/jfsecrets
