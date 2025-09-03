@@ -37,6 +37,7 @@ spec:
 
               ### Running Pods
               The following pods were found running at the time of evaluation:
+
               {{ .runningPods[] }}
         command: ["/bin/bash", "-c"]
         args:
