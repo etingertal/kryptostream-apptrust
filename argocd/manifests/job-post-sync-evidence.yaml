@@ -59,7 +59,7 @@ spec:
             fi
             install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
             if [ $? -ne 0 ]; then
-                echo "Failed to install k8s.
+                echo "Failed to install k8s."
                 exit 1
             fi
             # Check client installation
