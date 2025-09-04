@@ -154,9 +154,9 @@ spec:
             echo "Predicate:"
             cat predicate.json
 
-            echo "Markdown file before:"
-            echo "$MARKDOWN"
-            echo
+            #echo "Markdown file before:"
+            #echo "$MARKDOWN"
+            #echo
 
             # Editing MARKDOWN with values from EVIDENCE
             MAX_ITER=30                                                                     
@@ -175,17 +175,17 @@ spec:
               MARKDOWN=${MARKDOWN/"$MATCHED_PLACEHOLDER"/"$VALUE"}                          
             done            
 
-            echo "$MARKDOWN" > markdown.md
-            echo "Markdown file after:"
-            cat markdown.md
-            echo
+            #echo "$MARKDOWN" > markdown.md
+            #echo "Markdown file after:"
+            #cat markdown.md
+            #echo
 
             echo "Running jf evd create"
             jf evd create --project quotopia --release-bundle "$EVD_DEMO_APP_NAME" \
                 --release-bundle-version "$EVD_DEMO_APP_VER" --predicate predicate.json \
                 --predicate-type 'http://jfrog.com/argocd/v1' \
                 --key-alias argocd --key "$SIGN_KEY" \
-                --markdown markdown.md
+                --markdown markdown.md --provider-id akuity
 
       restartPolicy: Never
       serviceAccountName: default
