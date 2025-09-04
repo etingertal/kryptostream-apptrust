@@ -19,6 +19,6 @@ spec:
       - name: quotopia-ui-container
         image: apptrustswampup.jfrog.io/quotopia-prod-docker/quotopia-ui:54 
         ports:
-        - containerPort: 8080
+        - containerPort: 80
       imagePullSecrets:
         - name: apptrustswampup
