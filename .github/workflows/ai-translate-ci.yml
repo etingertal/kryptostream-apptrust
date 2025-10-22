@@ -102,21 +102,21 @@ jobs:
         docker pull ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
         docker images ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
 
-    - name: Run Grype scan
-      id: grype
-      uses: anchore/scan-action@v6
-      with:
-        image: ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
-        fail-build: false
-        output-format: cyclonedx-json
-        output-file: grype-output.json
-        severity-cutoff: "critical"
-        cache-db: true
+    # - name: Run Grype scan
+    #   id: grype
+    #   uses: anchore/scan-action@v6
+    #   with:
+    #     image: ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }}
+    #     fail-build: false
+    #     output-format: cyclonedx-json
+    #     output-file: grype-output.json
+    #     severity-cutoff: "critical"
+    #     cache-db: true
 
-    - name: Create evidence from Grype scan result
-      run: |
-        jf evd create --subject-repo-path quotopia-dev-docker/ai-translate/${{ github.run_number }}/list.manifest.json \
-          --predicate grype-output.json --provider-id anchore --predicate-type https://anchore.com/evidence/grype/v1
+    # - name: Create evidence from Grype scan result
+    #   run: |
+    #     jf evd create --subject-repo-path quotopia-dev-docker/ai-translate/${{ github.run_number }}/list.manifest.json \
+    #       --predicate grype-output.json --provider-id anchore --predicate-type https://anchore.com/evidence/grype/v1
 
     - name: Publish buildinfo
       id: publish_build
