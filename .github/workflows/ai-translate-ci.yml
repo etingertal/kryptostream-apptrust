@@ -47,9 +47,9 @@ jobs:
         pip install --no-cache-dir pytest pytest-asyncio
         python -m pytest tests/ -v --tb=short
         
-    - name: Cleanup pip cache
-      run: |
-        pip cache purge
+    # - name: Cleanup pip cache
+    #   run: |
+    #     pip cache purge
 
   build:
     name: Build Docker Image
