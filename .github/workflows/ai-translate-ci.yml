@@ -22,13 +22,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-        
+    
     - name: Cache pip packages
       uses: actions/cache@v4
       with:
@@ -37,7 +31,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-test-${{ hashFiles('translate/requirements-optimized.txt') }}
           ${{ runner.os }}-pip-test
-
+      
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
     - name: Install dependencies and run tests
       run: |
         cd translate
