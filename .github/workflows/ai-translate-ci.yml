@@ -44,7 +44,7 @@ jobs:
         # Install only production dependencies for testing
         pip install -r requirements-optimized.txt
         # Install minimal test dependencies
-        pip install --no-cache-dir pytest pytest-asyncio
+        pip install pytest pytest-asyncio
         python -m pytest tests/ -v --tb=short
         
     # - name: Cleanup pip cache
