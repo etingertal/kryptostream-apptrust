@@ -1,4 +1,4 @@
-package com.example.quotefday.config;
+package com.example.btcwallet.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -14,7 +14,7 @@ import java.util.List;
 public class OpenAPIConfig {
 
     @Bean
-    public OpenAPI quoteOfDayOpenAPI() {
+    public OpenAPI btcWalletOpenAPI() {
         Server devServer = new Server();
         devServer.setUrl("http://localhost:8001");
         devServer.setDescription("Development server");
@@ -33,12 +33,10 @@ public class OpenAPIConfig {
                 .url("https://www.apache.org/licenses/LICENSE-2.0");
 
         Info info = new Info()
-                .title("Quote of Day Service API")
+                .title("BTC Wallet Service API")
                 .version("1.0.0")
                 .contact(contact)
-                .description("This API provides endpoints for retrieving inspirational quotes of the day. " +
-                        "The service offers various quote retrieval methods including daily quotes, " +
-                        "date-specific quotes, and a collection of all available quotes.")
+                .description("This API provides endpoints for managing Bitcoin wallet transactions, including creating, retrieving, and deleting wallet addresses.")
                 .termsOfService("https://www.apache.org/licenses/LICENSE-2.0")
                 .license(mitLicense);
 
