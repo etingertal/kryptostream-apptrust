@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Wallet</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="header">
+            
+            <div class="banner-image">
+                <img src="btcwallet.png" alt="BTC Wallet Logo" class="full-width-banner"> 
+            </div>
+        </header>
+
+        <!-- Main Content Section -->
+        <main class="main-content">
+            <div class="wallet-container">
+                <div class="wallet-card">
+                    <blockquote class="wallet-address" id="walletAddress">
+                        Loading wallet information...
+                    </blockquote>
+                    <cite class="wallet-balance" id="walletBalance">
+                        —
+                    </cite>
+                    <div class="wallet-date" id="walletDate"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer Section -->
+        <footer class="footer">
+            <div class="wallet-selector-container">
+                <label for="walletSelector" class="wallet-label">Enter Wallet Address:</label>
+                <input type="text" id="walletSelector" class="wallet-input" placeholder="Enter wallet address">
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -2,6 +2,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "BTCWalletApplication",
+            "request": "launch",
+            "mainClass": "com.example.btcwallet.BTCWalletApplication",
+            "projectName": ""
+        },
+        {
+            "type": "java",
+            "name": "BTCWalletApplication",
+            "request": "launch",
+            "mainClass": "com.example.quotefday.BTCWalletApplication",
+            "projectName": ""
+        },
+        {
             "name": "Act: Run CI/CD Pipeline (Dry Run)",
             "type": "node",
             "request": "launch",
