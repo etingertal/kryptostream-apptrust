@@ -10,7 +10,7 @@ RUN groupadd -g 1001 spring && \
 WORKDIR /app
 
 # Copy the pre-built JAR file
-COPY --chown=spring:spring target/btcwallet-*.jar app.jar
+COPY --chown=spring:spring target/btc-wallet-*.jar app.jar
 
 USER spring
 EXPOSE 8001
