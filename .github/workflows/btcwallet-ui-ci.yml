@@ -53,7 +53,7 @@ jobs:
         jf docker buildx build --platform linux/amd64,linux/arm64 \
           --tag ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
-        jf rt build-docker-create btcwallet-ui-dev-docker  \
+        jf rt build-docker-create quotopia-dev-docker  \
           --image-file build-metadata --build-name btcwallet-ui --build-number ${{ github.run_number }} 
 
     - name: Test Docker image
