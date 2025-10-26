@@ -1,12 +1,12 @@
-name: Quotopia UI Service CI
+name: BTCWallet UI Service CI
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'quotopia-ui/**'
-      - '.github/workflows/quotopia-ui-ci.yml'
+      - 'btcwallet-ui/**'
+      - '.github/workflows/btcwallet-ui-ci.yml'
   workflow_dispatch:
 
 env:
@@ -48,22 +48,22 @@ jobs:
       
     - name: Build and Push Docker image
       run: |
-        cd quotopia-ui
+        cd btcwallet-ui
         # Build and push to JFrog Artifactory
         jf docker buildx build --platform linux/amd64,linux/arm64 \
-          --tag ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ github.run_number }} \
+          --tag ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
-        jf rt build-docker-create quotopia-dev-docker  \
-          --image-file build-metadata --build-name quotopia-ui --build-number ${{ github.run_number }} 
+        jf rt build-docker-create btcwallet-ui-dev-docker  \
+          --image-file build-metadata --build-name btcwallet-ui --build-number ${{ github.run_number }} 
 
     - name: Test Docker image
       run: |
-        cd quotopia-ui
+        cd btcwallet-ui
         # Pull the image for testing
-        jf docker pull ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ github.run_number }}
-        
+        jf docker pull ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ github.run_number }}
+
         # Run container with better debugging
-        jf docker run -d --name test-ui-container -p 8080:80 ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ github.run_number }}
+        jf docker run -d --name test-ui-container -p 8080:80 ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ github.run_number }}
         
         # Wait for container to start
         sleep 5
@@ -83,9 +83,9 @@ jobs:
     - name: Publish buildinfo
       id: publish_build
       run: |
-        jf rt build-add-git quotopia-ui ${{ github.run_number }}
-        jf rt build-publish quotopia-ui ${{ github.run_number }}
-        echo "build_name=quotopia-ui" >> $GITHUB_OUTPUT
+        jf rt build-add-git btcwallet-ui ${{ github.run_number }}
+        jf rt build-publish btcwallet-ui ${{ github.run_number }}
+        echo "build_name=btcwallet-ui" >> $GITHUB_OUTPUT
         echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
   create_jira_evidence:

@@ -1,12 +1,12 @@
-name: Quote of Day Service CI
+name: BTC Wallet Service CI
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'quoteofday/**'
-      - '.github/workflows/quoteofday-ci.yml'
+      - 'btcwallet/**'
+      - '.github/workflows/btcwallet-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -50,7 +50,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('quoteofday/pom.xml') }}
+        key: ${{ runner.os }}-m2-${{ hashFiles('btcwallet/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
 
     - name: Setup JFrog CLI
@@ -71,18 +71,18 @@ jobs:
       # env:
       #   DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
       run: |
-        cd quoteofday
+        cd btcwallet
         # Replace SNAPSHOT with GitHub run number for versioning
         sed -i "s/-SNAPSHOT/-${{ github.run_number }}/g" pom.xml
         echo "📦 Updated version to 1.0.0-${{ github.run_number }}"
         
         # Build and deploy to Artifactory
-        jf mvn deploy -Dscan=true -q --batch-mode --no-transfer-progress --build-name quoteofday --build-number ${{ github.run_number }}
-        
+        jf mvn deploy -Dscan=true -q --batch-mode --no-transfer-progress --build-name btcwallet --build-number ${{ github.run_number }}
+
     # - name: Get artifact SHA256
     #   id: get_sha256
     #   run: |
-    #     ARTIFACT_PATH="com/example/quote-of-day-service/1.0.0-${{ github.run_number }}/quote-of-day-service-1.0.0-${{ github.run_number }}.jar"
+    #     ARTIFACT_PATH="com/example/btcwallet/1.0.0-${{ github.run_number }}/btcwallet-1.0.0-${{ github.run_number }}.jar"
     #     JF_URL=${{ vars.JF_URL }}
     #     REPO_KEY="evidence-demo-libs-release"
     #     API_ENDPOINT="${JF_URL}/artifactory/api/storage/${REPO_KEY}/${ARTIFACT_PATH}"
@@ -155,13 +155,13 @@ jobs:
       
     - name: Build and Push Docker image
       run: |
-        cd quoteofday
+        cd btcwallet
         # Build and push to JFrog Artifactory
         jf docker buildx build --platform linux/amd64,linux/arm64 \
-          --tag ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }} \
+          --tag ${{ env.DOCKER_REGISTRY }}/btcwallet:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
         jf rt build-docker-create quotopia-dev-docker  \
-          --image-file build-metadata --build-name quoteofday --build-number ${{ github.run_number }} 
+          --image-file build-metadata --build-name btcwallet --build-number ${{ github.run_number }} 
 
     # - name: Evidence on docker image
     #   env:
@@ -176,18 +176,18 @@ jobs:
       
     - name: Test Docker image
       run: |
-        cd quoteofday
+        cd btcwallet
         # Pull the image for testing
-        jf docker pull ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }}
-        
+        jf docker pull ${{ env.DOCKER_REGISTRY }}/btcwallet:${{ github.run_number }}
+
         # Run container with better debugging
-        jf docker run -d --name test-container -p 8001:8001 ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ github.run_number }}
+        jf docker run -d --name test-container -p 8001:8001 ${{ env.DOCKER_REGISTRY }}/btcwallet:${{ github.run_number }}
         
         # Wait for container to start
         sleep 5
         
         # Test health endpoint
-        curl -f http://localhost:8001/api/quotes/health || {
+        curl -f http://localhost:8001/api/btcwallet/health || {
           echo "❌ Health check failed"
           exit 1
         } 
@@ -195,9 +195,9 @@ jobs:
     - name: Publish buildinfo
       id: publish_build
       run: |
-        jf rt build-add-git quoteofday ${{ github.run_number }}
-        jf rt build-publish quoteofday ${{ github.run_number }}
-        echo "build_name=quoteofday" >> $GITHUB_OUTPUT
+        jf rt build-add-git btcwallet ${{ github.run_number }}
+        jf rt build-publish btcwallet ${{ github.run_number }}
+        echo "build_name=btcwallet" >> $GITHUB_OUTPUT
         echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
   create_jira_evidence:
