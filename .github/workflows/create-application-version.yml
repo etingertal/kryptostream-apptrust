@@ -11,7 +11,7 @@ jobs:
       JF_URL: ${{ vars.JF_URL }}
       JF_USER: ${{ vars.JF_USER }}
       JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-      APP_ID: quotopia-app
+      APP_ID: btcwalletapp
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
 
@@ -25,7 +25,7 @@ jobs:
           JF_USER: ${{ vars.JF_USER }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
-      - name: Get latest quoteofday and ai-translate build numbers
+      - name: Get latest services build numbers
         id: get-latest-builds
         run: |
           set +e
@@ -44,18 +44,18 @@ jobs:
           }
 
           # Fetch build information from Artifactory API
-          LATEST_QUOTEOFDAY_BUILD_NUMBER=$(getBuildNumber quoteofday)
-          [ $? -ne 0 ] && echo "$LATEST_QUOTEOFDAY_BUILD_NUMBER" && exit 1
-          
-          echo "latest_quoteofday_build_number=$LATEST_QUOTEOFDAY_BUILD_NUMBER" >> $GITHUB_OUTPUT
-          echo "Found latest quoteofday build number: $LATEST_QUOTEOFDAY_BUILD_NUMBER"
+          LATEST_BTCWALLET_BUILD_NUMBER=$(getBuildNumber btcwallet)
+          [ $? -ne 0 ] && echo "$LATEST_BTCWALLET_BUILD_NUMBER" && exit 1
 
-          LATEST_QUOTOPIA_UI_BUILD_NUMBER=$(getBuildNumber quotopia-ui)
-          [ $? -ne 0 ] && echo "$LATEST_QUOTOPIA_UI_BUILD_NUMBER" && exit 1
-          
-          echo "latest_quotopia_ui_build_number=$LATEST_QUOTOPIA_UI_BUILD_NUMBER" >> $GITHUB_OUTPUT
-          echo "Found latest quotopia-ui build number: $LATEST_QUOTOPIA_UI_BUILD_NUMBER"  
-          
+          echo "latest_btcwallet_build_number=$LATEST_BTCWALLET_BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Found latest btcwallet build number: $LATEST_BTCWALLET_BUILD_NUMBER"
+
+          LATEST_BTCWALLET_UI_BUILD_NUMBER=$(getBuildNumber btcwallet-ui)
+          [ $? -ne 0 ] && echo "$LATEST_BTCWALLET_UI_BUILD_NUMBER" && exit 1
+
+          echo "latest_btcwallet_ui_build_number=$LATEST_BTCWALLET_UI_BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Found latest btcwallet-ui build number: $LATEST_BTCWALLET_UI_BUILD_NUMBER"
+
           LATEST_AI_TRANSLATE_BUILD_NUMBER=$(getBuildNumber ai-translate)
           [ $? -ne 0 ] && echo "$LATEST_AI_TRANSLATE_BUILD_NUMBER" && exit 1
           
@@ -113,8 +113,8 @@ jobs:
         id: create_app_ver
         run: |
           set +e
-          QUOTEOFDAY_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_quoteofday_build_number }}"
-          QUOTOPIA_UI_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_quotopia_ui_build_number }}"
+          BTCWALLET_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_btcwallet_build_number }}"
+          BTCWALLET_UI_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_btcwallet_ui_build_number }}"
           AI_TRANSLATE_BUILD_NUMBER="${{ steps.get-latest-builds.outputs.latest_ai_translate_build_number }}"
   
           echo "APP_ID=$APP_ID"
@@ -124,8 +124,8 @@ jobs:
           echo "NEXT_VER=$NEXT_VER"
   
           REQUEST_BODY="{\"version\": \"$NEXT_VER\", \"sources\": {\"builds\": [\
-          {\"name\":\"quoteofday\", \"number\":\"$QUOTEOFDAY_BUILD_NUMBER\", \"include_dependencies\":false},\
-          {\"name\":\"quotopia-ui\", \"number\":\"$QUOTOPIA_UI_BUILD_NUMBER\", \"include_dependencies\":false},\
+          {\"name\":\"btcwallet\", \"number\":\"$BTCWALLET_BUILD_NUMBER\", \"include_dependencies\":false},\
+          {\"name\":\"btcwallet-ui\", \"number\":\"$BTCWALLET_UI_BUILD_NUMBER\", \"include_dependencies\":false},\
           {\"name\":\"ai-translate\", \"number\":\"$AI_TRANSLATE_BUILD_NUMBER\", \"include_dependencies\":false}\
           ]}}"
           echo "REQUEST_BODY=$REQUEST_BODY"

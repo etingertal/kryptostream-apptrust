@@ -93,7 +93,7 @@ jobs:
           --cache-to type=registry,ref=${{ env.DOCKER_REGISTRY }}/ai-translate:cache,mode=max \
           --tag ${{ env.DOCKER_REGISTRY }}/ai-translate:${{ github.run_number }} \
           --metadata-file=build-metadata --output=type=image --push .
-        jf rt build-docker-create quotopia-dev-docker  \
+        jf rt build-docker-create ${{ env.PROJECT_DOCKER_DEV_REPO }}  \
           --image-file build-metadata --build-name ai-translate --build-number ${{ github.run_number }}
 
     - name: Verify Docker image
