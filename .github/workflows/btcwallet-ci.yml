@@ -65,7 +65,9 @@ jobs:
 
     - name: Setup Maven
       run: |
-        jf mvnc --server-id-resolve evidence-demo --server-id-deploy evidence-demo --repo-resolve-releases ${{ vars.JFROG_MVN_REPO_VIRTUAL }} --repo-resolve-snapshots ${{ vars.JFROG_MVN_REPO_VIRTUAL }} --repo-deploy-releases ${{ vars.JFROG_MVN_REPO_RELEASES }} --repo-deploy-snapshots ${{ vars.JFROG_MVN_REPO_SNAPSHOTS }} --interactive=false
+        jf mvnc --server-id-resolve evidence-demo --server-id-deploy evidence-demo --repo-resolve-releases ${{ vars.JFROG_MVN_REPO_VIRTUAL }} --repo-resolve-snapshots ${{ vars.JFROG_MVN_REPO_VIRTUAL }} --repo-deploy-releases ${{ vars.JFROG_MVN_REPO_RELEASES }} --repo-deploy-snapshots ${{ vars.JFROG_MVN_REPO_SNAPSHOTS }}
+        
+    # --interactive=false
 
     - name: Build and Deploy to Artifactory
       # env:

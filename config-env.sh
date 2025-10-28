@@ -189,6 +189,7 @@ echo
 # TODO:
 ## Automate Lifecycle edit to add stages
 
+# Create new application
 curl -X POST "${JF_URL}/apptrust/api/v1/applications" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${JF_PASSWORD}" \
