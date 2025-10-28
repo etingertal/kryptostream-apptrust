@@ -80,7 +80,7 @@ jobs:
         echo "📦 Updated version to 1.0.0-${{ github.run_number }}"
         
         # Build and deploy to Artifactory
-        jf mvn deploy -Dscan=true -q --batch-mode --no-transfer-progres --project btcwallet --build-name btcwallet --build-number ${{ github.run_number }}
+        jf mvn deploy -Dscan=true -q --batch-mode --no-transfer-progress --project btcwallet --build-name btcwallet --build-number ${{ github.run_number }}
 
     # - name: Get artifact SHA256
     #   id: get_sha256
