@@ -24,13 +24,14 @@ jobs:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ vars.JF_USER }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          JF_PROJECT: "btcwallet"
 
       - name: Get latest services build numbers
         id: get-latest-builds
         run: |
           set +e
           getBuildNumber() {
-            echo "Requeseting build ${{ vars.JF_URL }}/artifactory/api/build/$1" >&2
+            echo "Requeseting build ${{ vars.JF_URL }}/artifactory/api/build/$1?project=btcwallet" >&2
             local RESPONSE=$(curl -s -X GET \
                                 -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
                                 "${{ vars.JF_URL }}/artifactory/api/build/$1")
