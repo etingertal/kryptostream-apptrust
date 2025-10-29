@@ -34,7 +34,7 @@ jobs:
             echo "Requeseting build ${{ vars.JF_URL }}/artifactory/api/build/$1?project=btcwallet" >&2
             local RESPONSE=$(curl -s -X GET \
                                 -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
-                                "${{ vars.JF_URL }}/artifactory/api/build/$1")
+                                "${{ vars.JF_URL }}/artifactory/api/build/$1?project=btcwallet")
             local LATEST_BUILD_NUMBER=$(echo "$RESPONSE" | \
                                 jq -r '.buildsNumbers | sort_by(.started) | reverse | .[0].uri | ltrimstr("/")')
             if [ "" == "$LATEST_BUILD_NUMBER" ]; then 
