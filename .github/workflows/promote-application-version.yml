@@ -11,7 +11,7 @@ jobs:
       JF_URL: ${{ vars.JF_URL }}
       JF_USER: ${{ vars.JF_USER }}
       JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-      APP_ID: quotopia-app
+      APP_ID: btcwalletapp
       TARGET_STAGE: 'QA'
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
@@ -25,10 +25,13 @@ jobs:
         uses: jfrog/setup-jfrog-cli@v4
         with:
           version: 2.78.9
+          oidc-provider-name: btcwallet-gh
+          oidc-audience: btcwallet-gh
+        id: setup-cli
         env:
           JF_URL: ${{ vars.JF_URL }}
-          JF_USER: ${{ vars.JF_USER }}
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          # JF_USER: ${{ vars.JF_USER }}
+          # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
           
       - name: Get latest application version
         id: get_app_ver
@@ -93,7 +96,7 @@ jobs:
         run: |
           echo "🔐 Logging into JFrog Artifactory Docker registry..."
           echo "Registry: ${{ env.DOCKER_REGISTRY }}"
-          echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
+          echo ${{ steps.setup-cli.outputs.oidc-token }} | docker login -u ${{ steps.setup-cli.outputs.oidc-user }} --password-stdin ${{ env.DOCKER_REGISTRY }}
           echo "✅ Successfully logged into Docker registry"
 
       - name: Get latest Docker images from Artifactory for QA environment
@@ -102,52 +105,52 @@ jobs:
           set +e
           APP_VER=${{ steps.get_app_ver.outputs.app_ver }}
           URL="$JF_URL/apptrust/api/v1/applications/$APP_ID/versions/$APP_VER/content?include=sources"
-          echo "Requesting application sources: $URL"                                               
-          STATUS_CODE=$(curl -s -o result.json -w "%{http_code}" -X GET -H "Authorization: Bearer $JF_ACCESS_TOKEN" "$URL")
-                                                                                
-          if [ "$STATUS_CODE" != "200" ]; then                                  
-            echo "Reuquest failed with code $STATUS_CODE"                       
-            # Running again without silent to see errors                        
-            curl -X GET -H "Authorization: Bearer $JF_ACCESS_TOKEN" "$URL"      
-            exit 1                                                              
-          fi                             
+          echo "Requesting application sources: $URL"
+          STATUS_CODE=$(curl -s -o result.json -w "%{http_code}" -X GET -H "Authorization: Bearer ${{ steps.setup-cli.outputs.oidc-token }}" "$URL")
 
-          QUOTE_NUM=""
+          if [ "$STATUS_CODE" != "200" ]; then
+            echo "Request failed with code $STATUS_CODE"
+            # Running again without silent to see errors
+            curl -X GET -H "Authorization: Bearer ${{ steps.setup-cli.outputs.oidc-token }}" "$URL"
+            exit 1
+          fi
+
+          BTCWALLET_NUM=""
           UI_NUM=""
 
           while read -r build_info; do
             name=$(echo "$build_info" | jq -r '.name')
             number=$(echo "$build_info" | jq -r '.number')
             echo "Found build with name: $name and number: $number"
-            [ "$name" == "quoteofday" ] && QUOTE_NUM="$number"
-            [ "$name" == "quotopia-ui" ] && UI_NUM="$number"
+            [ "$name" == "btcwallet" ] && BTCWALLET_NUM="$number"
+            [ "$name" == "btcwallet-ui" ] && UI_NUM="$number"
           done < <(cat result.json | jq -c '.sources[] | {name: .build.name, number: .build.number}')
-        
-          if [ "" == "$QUOTE_NUM" -o "" == "$UI_NUM" ]; then
-            echo "quoteofday or quotopoia-ui version (or both) could not be found."
-            echo "QUOTE_NUM=$QUOTE_NUM UI_NUM=$UI_NUM"
+
+          if [ "" == "$BTCWALLET_NUM" -o "" == "$UI_NUM" ]; then
+            echo "btcwallet or btcwallet-ui version (or both) could not be found."
+            echo "BTCWALLET_NUM=$BTCWALLET_NUM UI_NUM=$UI_NUM"
             exit 1
           fi
 
           # Set output variables
-          echo "quote_version=$QUOTE_NUM" >> $GITHUB_OUTPUT
+          echo "btcwallet_version=$BTCWALLET_NUM" >> $GITHUB_OUTPUT
           echo "ui_version=$UI_NUM" >> $GITHUB_OUTPUT
           
           echo "📋 Image Summary:"
-          echo "- Quoteofday: ${{ env.DOCKER_REGISTRY }}/quoteofday:$QUOTE_NUM"
-          echo "- Quotopia UI: ${{ env.DOCKER_REGISTRY }}/quotopia-ui:$UI_NUM"
+          echo "- BTCWallet: ${{ env.DOCKER_REGISTRY }}/btcwallet:$BTCWALLET_NUM"
+          echo "- BTCWallet UI: ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:$UI_NUM"
 
       - name: Pull Docker images
         run: |
           echo "📥 Pulling Docker images..."
           
-          # Pull quoteofday image
-          echo "📦 Pulling quoteofday image..."
-          docker pull ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ steps.get-images.outputs.quote_version }}
-          
-          # Pull quotopia-ui image
-          echo "📦 Pulling quotopia-ui image..."
-          docker pull ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ steps.get-images.outputs.ui_version }}
+          # Pull btcwallet image
+          echo "📦 Pulling btcwallet image..."
+          docker pull ${{ env.DOCKER_REGISTRY }}/btcwallet:${{ steps.get-images.outputs.btcwallet_version }}
+
+          # Pull btcwallet-ui image
+          echo "📦 Pulling btcwallet-ui image..."
+          docker pull ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ steps.get-images.outputs.ui_version }}
           
           echo "✅ All images pulled successfully"
 
@@ -155,33 +158,33 @@ jobs:
         run: |
           echo "🚀 Starting Docker services..."
           
-          # Start quoteofday service
-          echo "🔧 Starting quoteofday service..."
-          docker run -d --name quoteofday-service \
+          # Start btcwallet service
+          echo "🔧 Starting btcwallet service..."
+          docker run -d --name btcwallet-service \
             -p 8001:8001 \
-            ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ steps.get-images.outputs.quote_version }}
-          
-          # Start quotopia-ui service
-          echo "🔧 Starting quotopia-ui service..."
-          docker run -d --name quotopia-ui-service \
+            ${{ env.DOCKER_REGISTRY }}/btcwallet:${{ steps.get-images.outputs.btcwallet_version }}
+
+          # Start btcwallet-ui service
+          echo "🔧 Starting btcwallet-ui service..."
+          docker run -d --name btcwallet-ui-service \
             -p 8081:80 \
             --add-host host.docker.internal:host-gateway \
-            ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ steps.get-images.outputs.ui_version }}
+            ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ steps.get-images.outputs.ui_version }}
           
           # Wait for services to be ready
           echo "⏳ Waiting for services to be ready..."
           sleep 10
           
           # Check if services are running
-          if ! docker ps | grep -q quoteofday-service; then
-            echo "❌ Quoteofday service failed to start"
-            docker logs quoteofday-service
+          if ! docker ps | grep -q btcwallet-service; then
+            echo "❌ BTCWallet service failed to start"
+            docker logs btcwallet-service
             exit 1
           fi
           
-          if ! docker ps | grep -q quotopia-ui-service; then
-            echo "❌ Quotopia UI service failed to start"
-            docker logs quotopia-ui-service
+          if ! docker ps | grep -q btcwallet-ui-service; then
+            echo "❌ BTCWallet UI service failed to start"
+            docker logs btcwallet-ui-service
             exit 1
           fi
           
@@ -241,7 +244,7 @@ jobs:
         run: |
           echo "📋 Creating evidence from test results..."
           cd e2e-tests
-          jf evd create --release-bundle quotopia-app --release-bundle-version ${{ steps.get_app_ver.outputs.app_ver }} --project quotopia \
+          jf evd create --release-bundle btcwalletapp --release-bundle-version ${{ steps.get_app_ver.outputs.app_ver }} --project btcwallet \
             --predicate-type https://cypress.io/evidence/e2e/v1 --predicate test-report.json --markdown test-report.md --provider-id cypress 
                    
           echo "✅ Evidence created successfully"
