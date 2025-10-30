@@ -3,6 +3,13 @@ name: End 2 End Tests
 on:
   workflow_dispatch:
 
+permissions:
+  actions: read           # for detecting the Github Actions environment
+  id-token: write         # for creating OIDC tokens for signing
+  packages: write         # for uploading attestations
+  contents: read          # read the contents permission
+  security-events: write  # for uploading code scanning
+
 jobs:
   end2end-tests:
     name: Run E2E Tests with Docker Services
@@ -10,7 +17,7 @@ jobs:
     env:
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
       JFROG_CLI_SIGNING_KEY: ${{ secrets.JFROG_CLI_SIGNING_KEY }}
-      DOCKER_REGISTRY: apptrustswampup.jfrog.io/quotopia-qa-docker
+      DOCKER_REGISTRY: ${{ vars.DOCKER_QA_REGISTRY }}
     
     steps:
     - name: Checkout code
@@ -20,10 +27,13 @@ jobs:
       uses: jfrog/setup-jfrog-cli@v4
       with:
         version: latest
+        oidc-provider-name: btcwallet-gh
+        oidc-audience: btcwallet-gh
+      id: setup-cli
       env:
         JF_URL: ${{ vars.JF_URL }}
         JF_USER: ${{ vars.JF_USER }}
-        JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+        # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -36,7 +46,7 @@ jobs:
       run: |
         echo "🔐 Logging into JFrog Artifactory Docker registry..."
         echo "Registry: ${{ env.DOCKER_REGISTRY }}"
-        echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login -u ${{ vars.JF_USER }} --password-stdin ${{ env.DOCKER_REGISTRY }}
+        echo ${{ steps.setup-cli.outputs.oidc-token }} | docker login -u ${{ steps.setup-cli.outputs.oidc-user }} --password-stdin ${{ env.DOCKER_REGISTRY }}
         echo "✅ Successfully logged into Docker registry"
 
     - name: Get latest Docker images from Artifactory for QA environment
@@ -45,80 +55,80 @@ jobs:
         echo "🔍 Fetching latest Docker images from Artifactory..."
         
         # Get latest images
-        QUOTE_RESPONSE=$(curl -s -X POST \
-          -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+        BTCWALLET_RESPONSE=$(curl -s -X POST \
+          -H "Authorization: Bearer ${{ steps.setup-cli.outputs.oidc-token }}" \
           -H "Content-Type: text/plain" \
-          -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quoteofday/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+          -d 'items.find({"repo": "btcwallet-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "btcwallet/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
-        echo "Quoteofday API Response: $QUOTE_RESPONSE"        
+        echo "BTCWallet API Response: $BTCWALLET_RESPONSE"        
 
-        QUOTE_IMAGE_TAG=$(echo "$QUOTE_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')        
-        echo "✅ Found quoteofday image tag: $QUOTE_IMAGE_TAG"
+        BTCWALLET_IMAGE_TAG=$(echo "$BTCWALLET_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')
+        echo "✅ Found btcwallet image tag: $BTCWALLET_IMAGE_TAG"
 
         UI_RESPONSE=$(curl -s -X POST \
-          -H "Authorization: Bearer ${{ secrets.JF_ACCESS_TOKEN }}" \
+          -H "Authorization: Bearer ${{ steps.setup-cli.outputs.oidc-token }}" \
           -H "Content-Type: text/plain" \
-          -d 'items.find({"repo": "quotopia-qa-docker", "name": "list.manifest.json", "path": {"$match": "quotopia-ui/*"}}).sort({"$desc": ["created"]}).limit(1)' \
+          -d 'items.find({"repo": "btcwallet-qa-docker-local", "name": "list.manifest.json", "path": {"$match": "btcwallet-ui/*"}}).sort({"$desc": ["created"]}).limit(1)' \
             "${{ vars.JF_URL }}/artifactory/api/search/aql")
-        echo "quotopia-ui API Response: $UI_RESPONSE"        
+        echo "btcwallet-ui API Response: $UI_RESPONSE"
 
-        UI_IMAGE_TAG=$(echo "$UI_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')        
-        echo "✅ Found quotopia-ui image tag: $UI_IMAGE_TAG"
+        UI_IMAGE_TAG=$(echo "$UI_RESPONSE" | jq -r '.results[0].path | split("/") | .[1] // empty')
+        echo "✅ Found btcwallet-ui image tag: $UI_IMAGE_TAG"
 
         
         # Set output variables
-        echo "quote_version=$QUOTE_IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "btcwallet_version=$BTCWALLET_IMAGE_TAG" >> $GITHUB_OUTPUT
         echo "ui_version=$UI_IMAGE_TAG" >> $GITHUB_OUTPUT
         
         echo "📋 Image Summary:"
-        echo "- Quoteofday: ${{ env.DOCKER_REGISTRY }}/quoteofday:$QUOTE_IMAGE_TAG"
-        echo "- Quotopia UI: ${{ env.DOCKER_REGISTRY }}/quotopia-ui:$UI_IMAGE_TAG"
+        echo "- BTCWallet: ${{ env.DOCKER_REGISTRY }}/btcwallet:$BTCWALLET_IMAGE_TAG"
+        echo "- BTCWallet UI: ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:$UI_IMAGE_TAG"
 
     - name: Pull Docker images
       run: |
         echo "📥 Pulling Docker images..."
-        
-        # Pull quoteofday image
-        echo "📦 Pulling quoteofday image..."
-        docker pull ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ steps.get-images.outputs.quote_version }}
-        
-        # Pull quotopia-ui image
-        echo "📦 Pulling quotopia-ui image..."
-        docker pull ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ steps.get-images.outputs.ui_version }}
+
+        # Pull btcwallet image
+        echo "📦 Pulling btcwallet image..."
+        docker pull ${{ env.DOCKER_REGISTRY }}/btcwallet:${{ steps.get-images.outputs.btcwallet_version }}
+
+        # Pull btcwallet-ui image
+        echo "📦 Pulling btcwallet-ui image..."
+        docker pull ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ steps.get-images.outputs.ui_version }}
         
         echo "✅ All images pulled successfully"
 
     - name: Start Docker services
       run: |
         echo "🚀 Starting Docker services..."
-        
-        # Start quoteofday service
-        echo "🔧 Starting quoteofday service..."
-        docker run -d --name quoteofday-service \
+
+        # Start btcwallet service
+        echo "🔧 Starting btcwallet service..."
+        docker run -d --name btcwallet-service \
           -p 8001:8001 \
-          ${{ env.DOCKER_REGISTRY }}/quoteofday:${{ steps.get-images.outputs.quote_version }}
-        
-        # Start quotopia-ui service
-        echo "🔧 Starting quotopia-ui service..."
-        docker run -d --name quotopia-ui-service \
+          ${{ env.DOCKER_REGISTRY }}/btcwallet:${{ steps.get-images.outputs.btcwallet_version }}
+
+        # Start btcwallet-ui service
+        echo "🔧 Starting btcwallet-ui service..."
+        docker run -d --name btcwallet-ui-service \
           -p 8081:80 \
           --add-host host.docker.internal:host-gateway \
-          ${{ env.DOCKER_REGISTRY }}/quotopia-ui:${{ steps.get-images.outputs.ui_version }}
-        
+          ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ steps.get-images.outputs.ui_version }}
+
         # Wait for services to be ready
         echo "⏳ Waiting for services to be ready..."
         sleep 10
         
         # Check if services are running
-        if ! docker ps | grep -q quoteofday-service; then
-          echo "❌ Quoteofday service failed to start"
-          docker logs quoteofday-service
+        if ! docker ps | grep -q btcwallet-service; then
+          echo "❌ BTCWallet service failed to start"
+          docker logs btcwallet-service
           exit 1
         fi
-        
-        if ! docker ps | grep -q quotopia-ui-service; then
-          echo "❌ Quotopia UI service failed to start"
-          docker logs quotopia-ui-service
+
+        if ! docker ps | grep -q btcwallet-ui-service; then
+          echo "❌ BTCWallet UI service failed to start"
+          docker logs btcwallet-ui-service
           exit 1
         fi
         
@@ -179,8 +189,8 @@ jobs:
         echo "📋 Creating evidence from test results..."
         cd e2e-tests
         jf evd create \
-          --subject-repo-path quotopia-release-bundles-v2/quotopia-app/24/release-bundle.json.evd \
-          --predicate-type https://cypress.io/evidence/e2e/v1 --predicate test-report.json --markdown test-report.md \
+          --subject-repo-path btcwallet-release-bundles-v2/btcwalletapp/3/release-bundle.json.evd \
+          --project btcwallet --predicate-type https://cypress.io/evidence/e2e/v1 --predicate test-report.json --markdown test-report.md \
           --provider-id cypress 
                  
         echo "✅ Evidence created successfully"
@@ -207,8 +217,8 @@ jobs:
         echo "🧹 Cleaning up Docker services..."
         
         # Stop and remove containers
-        docker stop quoteofday-service quotopia-ui-service 2>/dev/null || true
-        docker rm quoteofday-service quotopia-ui-service 2>/dev/null || true
+        docker stop btcwallet-service btcwallet-ui-service 2>/dev/null || true
+        docker rm btcwallet-service btcwallet-ui-service 2>/dev/null || true
         
         # Clean up images
         docker image prune -f
