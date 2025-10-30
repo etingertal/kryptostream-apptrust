@@ -43,12 +43,12 @@ jobs:
         distribution: 'temurin'
         cache: 'maven'
 
-    # - name: Cache SonarQube packages
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: ~/.sonar/cache
-    #     key: ${{ runner.os }}-sonar
-    #     restore-keys: ${{ runner.os }}-sonar
+    - name: Cache SonarQube packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
 
     - name: Cache Maven packages
       uses: actions/cache@v4
@@ -128,31 +128,31 @@ jobs:
     #     subject-digest: ${{ steps.get_sha256.outputs.sha256 }}
     #     subject-repository-url: apptrustswampup.jfrog.io/evidence-demo-libs-release-local 
 
-    # - name: Compile java for Sonar scan
-    #   run: |
-    #     cd quoteofday
-    #     mvn test-compile
+    - name: Compile java for Sonar scan
+      run: |
+        cd btcwallet
+        mvn test-compile
       
-    # - name: Sonar scan
-    #   uses: SonarSource/sonarqube-scan-action@v5
-    #   continue-on-error: true  # Don't fail build on SonarCloud quality gate issues
-    #   env:
-    #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    #   with:
-    #     projectBaseDir: quoteofday/
-    #     args: >
-    #       -Dsonar.organization=my-evidence-test-org1
-    #       -Dsonar.projectKey=my-evidence-test-org1_evidence-integration
-    #       -Dsonar.java.binaries=target/classes
-    #       -Dsonar.qualitygate.wait=false
+    - name: Sonar scan
+      uses: SonarSource/sonarqube-scan-action@v5
+      continue-on-error: true  # Don't fail build on SonarCloud quality gate issues
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        projectBaseDir: btcwallet/
+        args: >
+          -Dsonar.organization=my-evidence-test-org1
+          -Dsonar.projectKey=my-evidence-test-org1_evidence-integration
+          -Dsonar.java.binaries=target/classes
+          -Dsonar.qualitygate.wait=false
 
-    # - name: Create Test Evidence JSON
-    #   run: |
-    #     cd quoteofday
-    #     mkdir -p evidence
+    - name: Create Test Evidence JSON
+      run: |
+        cd btcwallet
+        mkdir -p evidence
         
-    #     # Run the conversion script to create evidence file with markdown report
-    #     ./scripts/convert-test-reports.sh target/surefire-reports 
+        # Run the conversion script to create evidence file with markdown report
+        ./scripts/convert-test-reports.sh target/surefire-reports 
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -174,16 +174,16 @@ jobs:
         jf rt build-docker-create ${{ env.PROJECT_DOCKER_DEV_REPO }}  \
           --project btcwallet --image-file build-metadata --build-name btcwallet --build-number ${{ github.run_number }}
 
-    # - name: Evidence on docker image
-    #   env:
-    #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    #   run: |
-    #     echo "🔍 Creating evidence on docker image..."
-    #     cd quoteofday
-    #     jf evd create --subject-repo-path quotopia-dev-docker/quoteofday/${{ github.run_number }}/list.manifest.json  \
-    #       --predicate ./test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 \
-    #       --markdown ./test-evidence.md --provider-id junit
-    #     jf evd create --package-name quoteofday --package-version ${{ github.run_number }} --package-repo-name quotopia-dev-docker --integration sonar
+    - name: Evidence on docker image
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        echo "🔍 Creating evidence on docker image..."
+        cd btcwallet
+        jf evd create --subject-repo-path ${{ env.PROJECT_DOCKER_DEV_REPO }}/btcwallet/${{ github.run_number }}/list.manifest.json  \
+          --project btcwallet --predicate ./test-evidence.json --predicate-type https://jfrog.com/evidence/test-results/v1 \
+          --markdown ./test-evidence.md --provider-id junit
+        jf evd create --package-name btcwallet --package-version ${{ github.run_number }} --package-repo-name ${{ env.PROJECT_DOCKER_DEV_REPO }} --project btcwallet --integration sonar
       
     - name: Test Docker image
       run: |
