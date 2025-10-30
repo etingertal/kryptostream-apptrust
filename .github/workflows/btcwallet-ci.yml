@@ -64,6 +64,7 @@ jobs:
         custom-server-id: evidence-demo
         oidc-provider-name: btcwallet-gh
         oidc-audience: btcwallet-gh
+      id: setup-cli
       env:
         JF_URL: ${{ vars.JF_URL }}
         # JF_USER: ${{ vars.JF_USER }}
@@ -155,7 +156,7 @@ jobs:
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
+    
     - name: Login to Docker Registry
       run: |
         echo "🔐 Logging into JFrog Artifactory Docker registry..."
