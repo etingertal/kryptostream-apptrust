@@ -253,7 +253,7 @@ jobs:
           cd e2e-tests
 
           jf evd create \
-              --subject-repo-path="application-versions/btcwalletapp/${{ steps.get_app_ver.outputs.app_ver }}/release-bundle.json.evd" \
+              --subject-repo-path="btcwallet-application-versions/btcwalletapp/${{ steps.get_app_ver.outputs.app_ver }}/release-bundle.json.evd" \
               --project btcwallet \
               --predicate test-report.json \
               --predicate-type https://cypress.io/evidence/e2e/v1 \
