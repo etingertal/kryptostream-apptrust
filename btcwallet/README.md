@@ -16,7 +16,7 @@ BTC Wallet's Backend service.
 - **Spring Boot 3.2.0**
 - **Maven** (Build tool)
 - **JUnit 5** (Testing framework)
-- **Spring Boot Test** (Integration testing)
+- **Spring Boot Test** (Integration testing) 
 
 ## Project Structure
 
