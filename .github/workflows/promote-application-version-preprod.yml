@@ -1,4 +1,4 @@
-name: Pre Release Application
+name: Promote Application to PreProd
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   promote-application:
-    name: Pre Release Latest Application Version
+    name: Promote Latest Application Version to PreProd
     runs-on: ubuntu-latest
     env:
       JF_URL: ${{ vars.JF_URL }}
