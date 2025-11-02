@@ -31,7 +31,7 @@ jobs:
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         with:
-          version: 2.78.9
+          # version: 2.78.9
           oidc-provider-name: btcwallet-gh
           oidc-audience: btcwallet-gh
         id: setup-cli
