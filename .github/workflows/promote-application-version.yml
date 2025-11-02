@@ -251,7 +251,7 @@ jobs:
         run: |
           echo "📋 Creating evidence from test results..."
           cd e2e-tests
-          jf evd create --release-bundle btcwalletapp --release-bundle-version ${{ steps.get_app_ver.outputs.app_ver }} --project btcwallet \
+          jf evd create --application-key btcwalletapp --application-version ${{ steps.get_app_ver.outputs.app_ver }} --project btcwallet \
             --predicate-type https://cypress.io/evidence/e2e/v1 --predicate test-report.json --markdown test-report.md --provider-id cypress 
                    
           echo "✅ Evidence created successfully"
