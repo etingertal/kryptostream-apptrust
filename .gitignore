@@ -165,6 +165,7 @@ cypress/downloads/
 !tsconfig.json
 !cypress.config.json
 !reporter-config.json
+!approval.json
 
 # Temporary files
 *.swp

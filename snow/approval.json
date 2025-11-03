@@ -1,0 +1,16 @@
+{
+    "status": "Approved",
+    "sys_id": "a22c10833bf43690a06c95e643e45afe",
+    "appliedPolicy": "DevOps Change Request JFrog Automation Policy (Manual approval)",
+    "number": "CHG0030102",
+    "type": "normal",
+    "risk": "High",
+    "impact": "3 - Low",
+    "priority": "4 - Low",
+    "changeState": "Implement",
+    "url": "https://goldengate2.service-now.com/now/sow/record/change_request/a22c10833bf43690a06c95e643e45afe",
+    "plannedStartDate": "2025-11-12 09:33:04",
+    "plannedEndDate": "2025-11-12 10:33:04",
+    "assignmentGroup": "App Owner",
+    "approvals": "Ronny Belenitsky (Approved), Eli Kopelevitch (No Longer Required)"
+  }

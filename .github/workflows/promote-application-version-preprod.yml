@@ -91,3 +91,18 @@ jobs:
             curl -s -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -H "Content-Type: application/json" -d "$REQUEST_BODY" "$PROMOTION_URL"
             exit 1
           fi
+
+      - name: Create evidence for Release Approval (simulate SNOW)
+        run: |
+          echo "📋 Creating evidence for Release Approval (SNOW)..."
+          cd snow
+
+          jf evd create \
+              --subject-repo-path="btcwallet-application-versions/btcwalletapp/${{ steps.get_app_ver.outputs.app_ver }}/release-bundle.json.evd" \
+              --project btcwallet \
+              --predicate approval.json \
+              --predicate-type https://servicenow.com/approval/v1 \
+              --markdown approval.md \
+              --provider-id servicenow
+                   
+          echo "✅ Evidence created successfully"
