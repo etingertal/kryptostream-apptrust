@@ -21,7 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/btcwallet")
 @CrossOrigin(origins = "*")
-@Tag(name = "BTC Wallet", description = "BTC Wallet management APIs ")
+@Tag(name = "BTC Wallet", description = "BTC Wallet management APIs")
 public class BTCWalletController {
 
     private final BTCWalletService btcWalletService;
