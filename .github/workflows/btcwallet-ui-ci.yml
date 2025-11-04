@@ -69,7 +69,7 @@ jobs:
         jf rt build-docker-create ${{ env.PROJECT_DOCKER_DEV_REPO }}  \
           --project btcwallet --image-file build-metadata --build-name btcwallet-ui --build-number ${{ github.run_number }} 
         # Extract the image digest
-        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ github.run_number }} | cut -d'@' -f2)
+        DIGEST=$(jq -r '.["containerimage.digest"]' build-metadata)
         echo "digest=$DIGEST" >> $GITHUB_OUTPUT
         echo "Extracted digest: $DIGEST"
 
