@@ -15,6 +15,7 @@ permissions:
   packages: write         # for uploading attestations
   contents: read          # read the contents permission
   security-events: write  # for uploading code scanning
+  attestations: write     # Required for attestation
 
 env:
   DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
@@ -166,6 +167,7 @@ jobs:
         echo "✅ Successfully logged into Docker registry"
       
     - name: Build and Push Docker image
+      id: build-and-push
       run: |
         cd btcwallet
         # Build and push to JFrog Artifactory
@@ -174,6 +176,17 @@ jobs:
           --metadata-file=build-metadata --output=type=image --push .
         jf rt build-docker-create ${{ env.PROJECT_DOCKER_DEV_REPO }}  \
           --project btcwallet --image-file build-metadata --build-name btcwallet --build-number ${{ github.run_number }}
+        # Extract the image digest
+        DIGEST=$(jq -r '.["containerimage.digest"]' build-metadata)
+        echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+        echo "Extracted digest: $DIGEST"
+
+    - name: Attest Docker Image with Build Provenance
+      uses: actions/attest-build-provenance@v3
+      with:
+        # The 'oci://' prefix is required by JFrog to correctly parse the artifact type
+        subject-name: oci://${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ github.run_number }}
+        subject-digest: ${{ steps.build-and-push.outputs.digest }}
 
     - name: Evidence on docker image
       env:
