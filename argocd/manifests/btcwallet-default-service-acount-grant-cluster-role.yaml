@@ -5,7 +5,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: default
-  namespace: quotopia
+  namespace: btcwallet
 roleRef:
   kind: ClusterRole
   name: job-reader

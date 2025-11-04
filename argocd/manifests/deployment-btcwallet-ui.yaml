@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: quotopia-ui
+  name: btcwallet-ui
   labels:
-    app: quotopia-ui
+    app: btcwallet-ui
 spec:
   revisionHistoryLimit: 0
   replicas: 1
   selector:
     matchLabels:
-      app: quotopia-ui
+      app: btcwallet-ui
   template:
     metadata:
       labels:
-        app: quotopia-ui
+        app: btcwallet-ui
     spec:
       containers:
-      - name: quotopia-ui-container
-        image: apptrustswampup.jfrog.io/quotopia-prod-docker/quotopia-ui:63 
+      - name: btcwallet-ui-container
+        image: apptrustinfra.jfrog.io/btcwallet-prod-docker/btcwallet-ui:63
         ports:
         - containerPort: 80
       imagePullSecrets:
-        - name: apptrustswampup
+        - name: apptrustinfra

@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: quoteofday
+  name: btcwallet
   labels:
-    app: quoteofday
+    app: btcwallet
 spec:
   revisionHistoryLimit: 0
   replicas: 1
   selector:
     matchLabels:
-      app: quoteofday
+      app: btcwallet
   template:
     metadata:
       labels:
-        app: quoteofday
+        app: btcwallet
     spec:
       containers:
-      - name: quoteofday-container
-        image: apptrustswampup.jfrog.io/quotopia-prod-docker/quoteofday:240
+      - name: btcwallet-container
+        image: apptrustinfra.jfrog.io/btcwallet-prod-docker/btcwallet:240
         ports:
         - containerPort: 8001
       imagePullSecrets:
-        - name: apptrustswampup
+        - name: apptrustinfra

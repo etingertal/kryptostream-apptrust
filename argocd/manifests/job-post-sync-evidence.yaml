@@ -11,7 +11,7 @@ spec:
       volumes:
       - name: jf-secrets-volume
         secret:
-          secretName: apptrustswampup-jf-cli
+          secretName: apptrustinfra-jf-cli
       - name: signing-key
         secret:
           secretName: evd-signing-key
@@ -43,7 +43,7 @@ spec:
         args:
           - |
             # These 2 below will be automatically replaced by the release-application-version.yml GitHub workflow
-            EVD_DEMO_APP_NAME=quotopia-app
+            EVD_DEMO_APP_NAME=btcwalletapp
             EVD_DEMO_APP_VER=50
 
             echo "JF secrets:"
@@ -111,7 +111,7 @@ spec:
 
             # Configure JSON CLI
             export CI="true"
-            export JFROG_CLI_URL="https://apptrustswampup.jfrog.io"
+            export JFROG_CLI_URL="https://apptrustinfra.jfrog.io"
             export JFROG_CLI_TOKEN=$(cat /etc/jfsecrets/JF_TOKEN)
             if [ "" == "$JFROG_CLI_TOKEN" ]; then
                 echo "JF_TOKEN secret is empty."
@@ -119,7 +119,7 @@ spec:
             fi
 
             echo "Adding configuration to JF CLI."
-            jf c add apptrustswampup --interactive=false --overwrite=true --url "$JFROG_CLI_URL" --access-token "$JFROG_CLI_TOKEN"
+            jf c add apptrustinfra --interactive=false --overwrite=true --url "$JFROG_CLI_URL" --access-token "$JFROG_CLI_TOKEN"
             if [ $? -ne 0 ]; then
                 "Failed to configure JF CLI."
                 exit 1
@@ -142,11 +142,11 @@ spec:
             fi
 
             CLUSTER_ID=$(kubectl get namespace kube-system -o=jsonpath='{.metadata.uid}')
-            RUNNING_PODS=$(kubectl -n quotopia get pods -o json |  jq '[.items[].metadata.name]')
+            RUNNING_PODS=$(kubectl -n btcwallet get pods -o json |  jq '[.items[].metadata.name]')
 
             echo "RUNNING_PODS=$RUNNING_PODS"
 
-            echo "quotopia-app=$EVD_DEMO_APP_NAME, 34=$EVD_DEMO_APP_VER, CLUSTER_ID=$CLUSTER_ID"
+            echo "btcwallet-app=$EVD_DEMO_APP_NAME, 34=$EVD_DEMO_APP_VER, CLUSTER_ID=$CLUSTER_ID"
 
             EVIDENCE="{\"deploymentState\":\"DEPLOYED\", \"time\":\"$(date)\", \"k8sClusterId\":\"$CLUSTER_ID\", \"runningPods\":$RUNNING_PODS}"
             echo "$EVIDENCE" > predicate.json
@@ -180,12 +180,13 @@ spec:
             #cat markdown.md
             #echo
 
-            echo "Running jf evd create"
-            jf evd create --project quotopia --release-bundle "$EVD_DEMO_APP_NAME" \
-                --release-bundle-version "$EVD_DEMO_APP_VER" --predicate predicate.json \
-                --predicate-type 'http://jfrog.com/argocd/v1' \
-                --key-alias argocd --key "$SIGN_KEY" \
-                --markdown markdown.md --provider-id akuity
+            jf evd create \
+              --subject-repo-path="btcwallet-application-versions/btcwalletapp/$EVD_DEMO_APP_VER/release-bundle.json.evd" \
+              --project btcwallet \
+              --predicate predicate.json \
+              --predicate-type http://jfrog.com/argocd/v1 \
+              --markdown markdown.md \
+              --provider-id akuity
 
       restartPolicy: Never
       serviceAccountName: default

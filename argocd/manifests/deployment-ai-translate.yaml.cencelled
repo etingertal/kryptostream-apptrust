@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: ai-translate-container
-        image: apptrustswampup.jfrog.io/quotopia-prod-docker/ai-translate:72 
+        image: apptrustinfra.jfrog.io/btcwallet-prod-docker/ai-translate:72 
         ports:
         - containerPort: 8080
       imagePullSecrets:
-        - name: apptrustswampup
+        - name: apptrustinfra
