@@ -1,0 +1,27 @@
+# .github/workflows/e2e-application.yml
+name: E2E Application Workflow
+on:
+    workflow_dispatch:
+
+permissions:
+  actions: read           # for detecting the Github Actions environment
+  id-token: write         # for creating OIDC tokens for signing
+  packages: write         # for uploading attestations
+  contents: read          # read the contents permission
+  security-events: write  # for uploading code scanning
+
+jobs:
+  call-create-application-version:
+    uses: ./.github/workflows/create-application-version.yml
+
+  call-promote-application-version:
+    needs: call-create-application-version
+    uses: ./.github/workflows/promote-application-version.yml
+
+  call-promote-application-version-preprod:
+    needs: call-promote-application-version
+    uses: ./.github/workflows/promote-application-version-preprod.yml
+
+  call-release-application-version:
+    needs: call-promote-application-version-preprod
+    uses: ./.github/workflows/release-application-version.yml

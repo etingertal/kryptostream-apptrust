@@ -2,6 +2,7 @@ name: Promote Application to PreProd
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   actions: read           # for detecting the Github Actions environment
