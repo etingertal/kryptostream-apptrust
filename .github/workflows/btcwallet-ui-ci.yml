@@ -16,7 +16,7 @@ permissions:
   actions: read           # for detecting the Github Actions environment
   id-token: write         # for creating OIDC tokens for signing
   packages: write         # for uploading attestations
-  contents: read          # read the contents permission
+  contents: write          # read the contents permission
   security-events: write  # for uploading code scanning
 
 jobs:
@@ -79,7 +79,6 @@ jobs:
         # The 'oci://' prefix is required by JFrog to correctly parse the artifact type
         subject-name: oci://${{ env.DOCKER_REGISTRY }}/btcwallet-ui:${{ github.run_number }}
         subject-digest: ${{ steps.build-and-push.outputs.digest }}
-        push-to-registry: false
 
     - name: Test Docker image
       run: |
