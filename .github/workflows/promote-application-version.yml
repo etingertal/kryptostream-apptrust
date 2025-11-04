@@ -17,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JF_URL: ${{ vars.JF_URL }}
-      JF_USER: ${{ vars.JF_USER }}
-      JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      # JF_USER: ${{ vars.JF_USER }}
+      # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
       APP_ID: btcwalletapp
       TARGET_STAGE: 'btcwallet-QA'
       JFROG_CLI_KEY_ALIAS: ${{ vars.JFROG_CLI_KEY_ALIAS }}
@@ -51,7 +51,7 @@ jobs:
           echo "Fetching latest application version from: $API_URL"
           
           RESPONSE=$(curl -s -X GET \
-            -H "Authorization: Bearer $JF_ACCESS_TOKEN" \
+            -H "Authorization: Bearer ${{ steps.setup-cli.outputs.oidc-token }}" \
             "$API_URL")
           
           # Use jq to parse the JSON and extract the version.
@@ -76,7 +76,7 @@ jobs:
           echo "Promoting application '$APP_ID' version $APP_VER to stage $TARGET_STAGE..."
           
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $JF_ACCESS_TOKEN" \
+            -H "Authorization: Bearer ${{ steps.setup-cli.outputs.oidc-token }}" \
             -H "Content-Type: application/json" \
             -d "$REQUEST_BODY" \
             "$PROMOTION_URL")
@@ -89,7 +89,7 @@ jobs:
           else
             echo "Failed to promote application. HTTP status code: $STATUS_CODE"
             # Run again to see output
-            curl -s -X POST -H "Authorization: Bearer $JF_ACCESS_TOKEN" -H "Content-Type: application/json" -d "$REQUEST_BODY" "$PROMOTION_URL"
+            curl -s -X POST -H "Authorization: Bearer ${{ steps.setup-cli.outputs.oidc-token }}" -H "Content-Type: application/json" -d "$REQUEST_BODY" "$PROMOTION_URL"
             exit 1
           fi
 
