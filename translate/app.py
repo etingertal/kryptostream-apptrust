@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Translation Service",
-    description="A REST API service for English to French translation using Hugging Face models",
+    description="A REST API service for English to French translation using Hugging Face models ",
     version="1.0.0"
 )
 
