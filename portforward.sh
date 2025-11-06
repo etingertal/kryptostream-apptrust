@@ -22,9 +22,9 @@ run_port_forward() {
 # Run each port-forward command in the background
 run_port_forward svc/argocd-server 8080 443 argocd &
 PID1="$!"
-run_port_forward service/quotopia-ui-service 9000 80 quotopia &
+run_port_forward service/btcwallet-ui-service 9000 80 btcwallet &
 PID2="$!"
-run_port_forward service/quoteofday-service 8001 8001 quotopia &
+run_port_forward service/btcwallet-service 8001 8001 btcwallet &
 PID3="$!"
 
 killcommands() {
