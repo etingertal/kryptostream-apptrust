@@ -8,7 +8,7 @@ permissions:
   actions: read           # for detecting the Github Actions environment
   id-token: write         # for creating OIDC tokens for signing
   packages: write         # for uploading attestations
-  contents: read          # read the contents permission
+  contents: write         # for writing the contents permission
   security-events: write  # for uploading code scanning
 
 jobs:
@@ -127,12 +127,11 @@ jobs:
             sed -i "s|EVD_DEMO_APP_NAME=.*|EVD_DEMO_APP_NAME=$APP_ID|" "argocd/manifests/job-post-sync-evidence.yaml" 
             sed -i "s|EVD_DEMO_APP_VER=.*|EVD_DEMO_APP_VER=$APP_VER|" "argocd/manifests/job-post-sync-evidence.yaml" 
 
-            git remote set-url origin https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config user.name "github-actions[bot]"
+            git remote set-url origin https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
             git add argocd
             git commit -m "Updating Argo CD manifests with application version $APP_VER" || echo "No changes to commit"
-            git push
+            git push origin HEAD
           fi
 
