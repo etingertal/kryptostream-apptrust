@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Set variables
-JF_URL="https://swampupsec.jfrog.io"
 read -p "Enter your JFrog username: " JF_USERNAME
 read -s -p "Enter your JFrog Access Token: " JF_PASSWORD
 echo
@@ -185,9 +184,6 @@ echo
 #     }
 #     ]'
 
-# TODO:
-## Automate Lifecycle edit to add stages
-
 # Create new application
 # curl -X POST "${JF_URL}/apptrust/api/v1/applications" \
 #     -H "Content-Type: application/json" \
@@ -223,8 +219,8 @@ echo
 
 # JUnit
 # curl -X POST "${JF_URL}/unifiedpolicy/api/v1/rules" -H "Authorization: Bearer ${JF_PASSWORD}" -H "Content-Type: application/json" -d '{
-#     "name": "Unit Testing (JUnit) Evidence Validation",
-#     "description": "This rule validates unit testing (JUnit) evidence exists.",
+#     "name": "UT (JUT) Evidence Validation",
+#     "description": "This rule validates UT (JUT) evidence exists.",
 #     "is_custom": true,
 #     "template_id": "1003",
 #     "parameters": [
@@ -291,3 +287,9 @@ echo
 #       }
 #     ]
 #   }'
+
+# TODO:
+## Automate Lifecycle edit to add stages
+## Create Lifecycle Policies
+## Create OIDC Config
+## Add Public key
